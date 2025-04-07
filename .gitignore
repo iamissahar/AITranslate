@@ -1,0 +1,6 @@
+python/.venv
+python/.pytest_cache
+python/.evn
+python/__pycache__
+python/pgdata
+go/pgdata

@@ -1,0 +1,29 @@
+{
+    "manifest_version": 3,
+    "name": "Smart Translation",
+    "description": "Smart Translation - Instantly translate any selected text into your native (or chosen) language using GPT. Simply highlight the text, right-click, and select 'Smart Translation' from the context menu. A popup window with the translation will appear next to the original text.",
+    "version": "1.0",
+    "permissions": [
+      "activeTab",
+      "storage"
+    ],
+    "background": {
+      "service_worker": "js/background.js"
+    },
+    "action": {
+      "default_popup": "html/popup.html",
+      "default_icon": {
+        "16": "icons/icon16.png",
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
+      }
+    },
+    "content_scripts": [
+      {
+        "matches": ["<all_urls>"],
+        "js": ["js/content.js"]
+      }
+    ],
+    "host_permissions": []
+  }
+  
