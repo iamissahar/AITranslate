@@ -11,10 +11,13 @@ class RequestResponse(BaseModel):
     language: str = Field(..., alias="language_code")
     text: str = Field(..., alias="text")
 
+class Message(BaseModel):
+    role: str = Field(..., alias="role")
+    content: str = Field(..., alias="content")
+
 class OpenChatReq(BaseModel):
-    input: str = Field(..., alias="input")
     model: str = Field(..., alias="model")
-    instructions: str = Field(..., alias="instructions")
+    messages: list[Message] = Field(..., alias="messages")
     stream: bool = Field(..., alias="stream")
     temperature: float = Field(..., alias="temperature")
 

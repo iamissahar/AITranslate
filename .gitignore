@@ -4,3 +4,4 @@ python/.evn
 python/__pycache__
 python/pgdata
 go/pgdata
+python/miniconda.sh

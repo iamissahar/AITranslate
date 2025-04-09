@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -13,13 +14,15 @@ import (
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
+	"gopkg.in/gomail.v2"
 )
 
 const (
-	model    string = "gpt-4o"
-	response        = "response"
-	database        = "database"
-	golang          = "golang"
+	url      string = "https://api.openai.com/v1/chat/completions"
+	model    string = "gpt-3.5-turbo"
+	response string = "response"
+	database string = "database"
+	golang   string = "golang"
 )
 
 var (
@@ -27,24 +30,28 @@ var (
 	Db      *sql.DB
 )
 
-type Response struct {
-	UserID int    `jsno:"user_id"`
-	Text   string `json:"text"`
-	Error  string `json:"error"`
-}
-
 type Request struct {
 	UserID int    `json:"user_id"`
 	Lang   string `json:"lang_code"`
 	Text   string `json:"text"`
+	Stream chan *Response
+}
+
+type Response struct {
+	UserID int    `json:"user_id"`
+	Text   string `json:"text"`
+}
+
+type message struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
 }
 
 type OpenAIReq struct {
-	Input        string  `json:"input"`
-	Model        string  `json:"model"`
-	Instructions string  `json:"instructions"`
-	Stream       bool    `json:"stream"`
-	Temperature  float64 `json:"temperature"`
+	Model       string     `json:"model"`
+	Messages    []*message `json:"messages"`
+	Stream      bool       `json:"stream"`
+	Temperature float64    `json:"temperature"`
 }
 
 type streamErr struct {
@@ -63,10 +70,19 @@ type StreamChunk struct {
 	Error   *streamErr `json:"error"`
 }
 
+type CompleteStream struct {
+	ID           string
+	Object       string
+	Created      int64
+	Model        string
+	FinishReason string
+	Text         string
+}
+
 type choice struct {
-	Delta        *delta `json:"delta"`
-	Index        int    `json:"index"`
-	FinishReason string `json:"finish_reason,omitempty"`
+	Delta        *delta  `json:"delta,omitempty"`
+	Index        int     `json:"index"`
+	FinishReason *string `json:"finish_reason,omitempty"`
 }
 
 type delta struct {
@@ -75,8 +91,18 @@ type delta struct {
 }
 
 func errorHandler(userID, errid int, f string, err error) {
-	err = fmt.Errorf("userID: %d, function: %s, errorid: %d, error: %s", userID, f, errid, err.Error())
-	fmt.Println(err)
+	message := fmt.Sprintf("userID: %d,<br />function: %s,<br />errorID: %d,<br />error: %s", userID, f, errid, err.Error())
+	m := gomail.NewMessage()
+	m.SetHeader("From", os.Getenv("email_from"))
+	m.SetHeader("To", os.Getenv("email_to"))
+	m.SetHeader("Subject", "!!WARNING!! Smart Translation Backend ERROR!")
+	m.SetBody("text/html", message)
+	fmt.Println(message)
+	d := gomail.NewDialer(os.Getenv("email_host"), 587, os.Getenv("email_from"), os.Getenv("email_password"))
+	err = d.DialAndSend(m)
+	if err != nil {
+		fmt.Print(err)
+	}
 }
 
 func newUser(userID int) bool {
@@ -109,74 +135,75 @@ func increment(userID int) {
 	}
 }
 
-func endTransaction(userID int, tx *sql.Tx) {
+func endTransaction(userID int, tx *sql.Tx, goback *bool) {
 	var err error
-	if p := recover(); p != nil {
-		tx.Rollback()
-		panic(p)
-	} else if err != nil {
+	if *goback {
 		tx.Rollback()
 	} else {
 		err = tx.Commit()
 		if err != nil {
-			errorHandler(userID, 10, "saveResp()", err)
+			errorHandler(userID, 0, "endTransaction()", err)
 		}
 	}
 }
 
-func updateDB(userID int, resp StreamChunk) {
+func updateDB(userID int, cs *CompleteStream) {
+	var (
+		contentid int
+		goback    bool
+	)
 	tx, err := Db.Begin()
 	if err != nil {
-		errorHandler(userID, 0, "saveResp()", err)
+		errorHandler(userID, 0, "updateDB()", err)
 	} else {
-		defer endTransaction(userID, tx)
+		defer endTransaction(userID, tx, &goback)
 
 		_, err = tx.Exec(`
 			INSERT INTO Responses 
 			(id, time_creation, model) 
 			VALUES ($1, $2, $3)`,
-			resp.ID, time.Unix(resp.Created, 0), resp.Model)
+			cs.ID, time.Unix(cs.Created, 0), cs.Model)
 
 		if err != nil {
-			errorHandler(userID, 1, "saveResp()", err)
+			errorHandler(userID, 1, "updateDB()", err)
+			goback = true
 		} else {
-
-			_, err = tx.Exec(`
-				INSERT INTO Content 
-				(content_index, response_id, object, text) 
-				VALUES ($1, $2, $3, $4)`,
-				resp.Choices[0].Index, resp.ID, resp.Object, resp.Choices[0].Delta.Content)
-
+			err = tx.QueryRow("SELECT nextval('content_id_seq')").Scan(&contentid)
 			if err != nil {
-				errorHandler(userID, 2, "saveResp()", err)
+				errorHandler(userID, 2, "updateDB()", err)
+				goback = true
 			} else {
 
 				_, err = tx.Exec(`
-					INSERT INTO Relations 
-					(user_id, response_id, content_index) 
-					VALUES ($1, $2, $3)`,
-					userID, resp.ID, resp.Choices[0].Index)
+				INSERT INTO Content 
+				(id, response_id, object, text, finish_reason) 
+				VALUES ($1, $2, $3, $4, $5)`,
+					contentid, cs.ID, cs.Object, cs.Text, cs.FinishReason)
 
 				if err != nil {
-					errorHandler(userID, 3, "saveResp()", err)
+					errorHandler(userID, 3, "updateDB()", err)
+					goback = true
+				} else {
+
+					_, err = tx.Exec(`
+					INSERT INTO Relations 
+					(user_id, response_id, content_id) 
+					VALUES ($1, $2, $3)`,
+						userID, cs.ID, contentid)
+
+					if err != nil {
+						errorHandler(userID, 4, "updateDB()", err)
+						goback = true
+					}
 				}
 			}
 		}
 	}
 }
 
-func responseWork(userID int, resp StreamChunk, ctx *gin.Context) {
-	r := Response{
-		UserID: userID,
-		Text:   resp.Choices[0].Delta.Content,
-	}
-	updateDB(userID, resp)
-	ctx.JSON(http.StatusOK, r)
-}
-
 func makeRequest(userID int, body []byte) *http.Response {
 	var resp *http.Response
-	req, err := http.NewRequest(http.MethodPost, "https://api.openai.com/v1/responses", bytes.NewBuffer(body))
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(body))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+authkey)
 
@@ -188,30 +215,64 @@ func makeRequest(userID int, body []byte) *http.Response {
 	return resp
 }
 
-func startScaning(resp *http.Response, userID int, ctx *gin.Context, workForResponse func(int, StreamChunk, *gin.Context)) {
+func startScanning(resp *http.Response, r *Request) {
+	defer resp.Body.Close()
+
 	var (
-		chunk StreamChunk
-		i     int = 2
+		chunk   StreamChunk
+		i       int = 2
+		lineb   []byte
+		err     error
+		linestr string
+		isDone  = false
+		cs      = new(CompleteStream)
 	)
-	fmt.Println(chunk)
-	scanner := bufio.NewScanner(resp.Body)
-	for scanner.Scan() {
-		line := scanner.Text()
-		fmt.Println(line)
-		if strings.HasPrefix(line, "data: ") {
-			data := strings.TrimPrefix(line, "data: ")
-			if data == "[DONE]" {
-				break
+	reader := bufio.NewReader(resp.Body)
+	for !isDone {
+		if lineb, err = reader.ReadBytes('\n'); err != nil {
+			if err != io.EOF {
+				errorHandler(r.UserID, i, "startScanning()", err)
+				isDone = true
 			}
+		}
 
-			if err := json.Unmarshal([]byte(data), &chunk); err != nil {
-				errorHandler(userID, i, "callOpenAI()", err)
-			} else {
-
-				if len(chunk.Choices) > 0 {
-					text := chunk.Choices[0].Delta.Content
-					if text != "" {
-						workForResponse(userID, chunk, ctx)
+		if err == nil {
+			linestr = string(lineb)
+			if strings.HasPrefix(linestr, "data: ") {
+				data := strings.TrimPrefix(linestr, "data: ")
+				if len(data) > 6 && data[:6] == "[DONE]" {
+					isDone = true
+					fmt.Println("The whole text response: ", cs.Text)
+					updateDB(r.UserID, cs)
+				}
+				if !isDone {
+					if err = json.Unmarshal([]byte(data), &chunk); err != nil {
+						errorHandler(r.UserID, i, "callOpenAI()", err)
+					} else {
+						if cs.ID == "" && chunk.ID != "" {
+							cs.ID = chunk.ID
+						}
+						if cs.Created == 0 && chunk.Created != 0 {
+							cs.Created = chunk.Created
+						}
+						if cs.Model == "" && chunk.Model != "" {
+							cs.Model = chunk.Model
+						}
+						if cs.Object == "" && chunk.Object != "" {
+							cs.Object = chunk.Object
+						}
+						for _, choice := range chunk.Choices {
+							if choice != nil && choice.Delta != nil && choice.Delta.Content != "" && choice.FinishReason == nil {
+								cs.Text += choice.Delta.Content
+								rr := &Response{
+									UserID: r.UserID,
+									Text:   choice.Delta.Content,
+								}
+								r.Stream <- rr
+							} else if choice.FinishReason != nil {
+								cs.FinishReason = *choice.FinishReason
+							}
+						}
 					}
 				}
 			}
@@ -220,14 +281,16 @@ func startScaning(resp *http.Response, userID int, ctx *gin.Context, workForResp
 	}
 }
 
-func callOpenAI(r Request, responseWork func(int, StreamChunk, *gin.Context), ctx *gin.Context) {
+func callOpenAI(r *Request) {
+	defer close(r.Stream)
 	var resp *http.Response
 	openai := &OpenAIReq{
-		Input:        r.Text,
-		Model:        model,
-		Instructions: fmt.Sprintf("Translate the text I give you to the language: %s. Answer with everything, but the actual transtaltion. No need to put it in put in quotes, or anything else I need only pure translated text", r.Lang),
-		Stream:       true,
-		Temperature:  0.2,
+		Model: model,
+		Messages: []*message{
+			{Role: "assistant", Content: fmt.Sprintf("you are being given a text in a langauge the user doesn't understand. your duty is to translate it to the %s language.", r.Lang)},
+			{Role: "user", Content: r.Text}},
+		Stream:      true,
+		Temperature: 0.2,
 	}
 	body, err := json.Marshal(openai)
 	if err != nil {
@@ -235,16 +298,15 @@ func callOpenAI(r Request, responseWork func(int, StreamChunk, *gin.Context), ct
 	} else {
 		fmt.Printf("Request: %s\n", string(body))
 		resp = makeRequest(r.UserID, body)
-		startScaning(resp, r.UserID, ctx, responseWork)
+		startScanning(resp, r)
 	}
 }
 
-func Mainlogic(req Request, ctx *gin.Context) {
-	if newUser(req.UserID) {
+func Mainlogic(req *Request, ctx *gin.Context) {
+	if req.UserID == 0 || newUser(req.UserID) {
 		req.UserID = addUser(req.Lang, ctx.ClientIP())
 	} else {
 		increment(req.UserID)
 	}
-
-	callOpenAI(req, responseWork, ctx)
+	callOpenAI(req)
 }

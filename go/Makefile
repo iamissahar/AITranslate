@@ -19,6 +19,15 @@ run.app:
 	-e sslmode_db=disable \
 	st-app
 
+rungo:
+	host_db=localhost \
+	port_db=5432 \
+	user_db=postgres \
+	password_db=postgres \
+	dbname_db=postgres \
+	sslmode_db=disable \
+	go run cmd/main.go
+
 run.db:
 	docker run -d --rm --name st-postgres-container \
 	-e POSTGRES_USER=postgres \
@@ -63,5 +72,8 @@ test:
 
 psql:
 	docker exec -it st-postgres-container psql -U postgres
+
+logs:
+	docker logs st-postgres-container
 
 #--network ST-network 

@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,21 +17,13 @@ const (
 
 var (
 	userID int
-	stch   = StreamChunk{
-		ID:      "AKDSKASKDAKASDsdasdaDasl;dL:SDL:asASD",
-		Object:  "stream-chunk",
-		Created: time.Now().Unix(),
-		Model:   "gpt-4o",
-		Choices: []*choice{{
-			Delta: &delta{Content: "It's just a part of text"},
-			Index: 2,
-		}},
-	}
-	req = Request{
-		UserID: 1231231,
-		Lang:   "ru",
-		Text:   "Угадай-ка вот это!",
-	}
+	cs     = CompleteStream{
+		ID:           "AKDSKASKDAKASDsdasdaDasl;dL:SDL:asASD",
+		Object:       "stream-chunk",
+		Created:      time.Now().Unix(),
+		Model:        "gpt-3.5-turbo",
+		FinishReason: "stop",
+		Text:         "It's just a part of text"}
 )
 
 func delUser(t *testing.T) {
@@ -51,18 +42,19 @@ func resetSeq(t *testing.T) {
 
 func cleanAll(t *testing.T) {
 	delUser(t)
-	_, err := Db.Exec("DELETE FROM Content WHERE content_index = $1 AND response_id = $2", stch.Choices[0].Index, stch.ID)
+	_, err := Db.Exec("DELETE FROM Content WHERE id = $1", 1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = Db.Exec("DELETE FROM Responses WHERE id = $1", stch.ID)
+	_, err = Db.Exec("DELETE FROM Responses WHERE id = $1", cs.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = Db.Exec("DELETE FROM Relations WHERE user_id = $1 AND response_id = $2 AND content_index = $3", userID, stch.ID, stch.Choices[0].Index)
+	_, err = Db.Exec("DELETE FROM Relations WHERE user_id = $1 AND response_id = $2 AND content_id = $3", userID, cs.ID, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
+	_, err = Db.Exec("ALTER SEQUENCE content_id_seq RESTART WITH 1")
 	resetSeq(t)
 }
 
@@ -89,7 +81,7 @@ func checkIncrement(t *testing.T) int {
 func checkResponses(t *testing.T) bool {
 	var res int
 	err := Db.QueryRow("SELECT COUNT(*) FROM Responses WHERE id = $1 AND time_creation = $2 AND model = $3",
-		stch.ID, time.Unix(stch.Created, 0), stch.Model).Scan(&res)
+		cs.ID, time.Unix(cs.Created, 0), cs.Model).Scan(&res)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,8 +90,8 @@ func checkResponses(t *testing.T) bool {
 
 func checkContent(t *testing.T) bool {
 	var res int
-	err := Db.QueryRow("SELECT COUNT(*) FROM Content WHERE content_index = $1 AND response_id = $2 AND object = $3 AND text = $4",
-		stch.Choices[0].Index, stch.ID, stch.Object, stch.Choices[0].Delta.Content).Scan(&res)
+	err := Db.QueryRow("SELECT COUNT(*) FROM Content WHERE id = $1 AND response_id = $2 AND object = $3 AND text = $4",
+		1, cs.ID, cs.Object, cs.Text).Scan(&res)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,8 +100,8 @@ func checkContent(t *testing.T) bool {
 
 func checkRelations(t *testing.T) bool {
 	var res int
-	err := Db.QueryRow("SELECT COUNT(*) FROM Relations WHERE user_id = $1 AND response_id = $2 AND content_index = $3",
-		userID, stch.ID, stch.Choices[0].Index).Scan(&res)
+	err := Db.QueryRow("SELECT COUNT(*) FROM Relations WHERE user_id = $1 AND response_id = $2 AND content_id = $3",
+		userID, cs.ID, 1).Scan(&res)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,21 +140,25 @@ func TestUpdateDB(t *testing.T) {
 	defer cleanAll(t)
 	createUser(t)
 
-	updateDB(userID, stch)
+	updateDB(userID, &cs)
 	assert.Equal(t, checkResponses(t), true, "the result should be true")
 	assert.Equal(t, checkContent(t), true, "the result should be true")
 	assert.Equal(t, checkRelations(t), true, "the result should be true")
 }
 
-func respFromOpanAI(_ int, chunk StreamChunk, _ *gin.Context) {
-	fmt.Println(chunk)
-	fmt.Println(chunk.Choices)
-	fmt.Println(chunk.Choices[0])
-	fmt.Println(chunk.Choices[0].Delta)
-}
-
 func TestCallOpenAI(t *testing.T) {
-	callOpenAI(req, respFromOpanAI, nil)
+	req := &Request{
+		UserID: 1231231,
+		Lang:   "en",
+		Text:   "Hola!",
+	}
+	s := ""
+	req.Stream = make(chan *Response)
+	go callOpenAI(req)
+	for resp := range req.Stream {
+		s += resp.Text
+	}
+	assert.Equal(t, s, "Hello!")
 }
 
 func init() {

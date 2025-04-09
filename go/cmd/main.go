@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 
@@ -15,19 +16,28 @@ func startAPI() {
 	router.POST("/translate/", func(ctx *gin.Context) {
 		var (
 			err error
-			req app.Request
+			req = new(app.Request)
 		)
-		ctx.Writer.Header().Set("Content-Type", "text/event-stream")
-		ctx.Writer.Header().Set("Cache-Control", "no-cache")
-		ctx.Writer.Header().Set("Connection", "keep-alive")
-		ctx.Writer.Flush()
 
-		if err = ctx.ShouldBindJSON(&req); err != nil {
+		if err = ctx.ShouldBindJSON(req); err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 
 		if req.Lang != "" && req.Text != "" {
-			app.Mainlogic(req, ctx)
+			req.Stream = make(chan *app.Response)
+			go app.Mainlogic(req, ctx)
+
+			ctx.Stream(func(w io.Writer) bool {
+				var (
+					peace *app.Response
+					ok    bool
+				)
+				if peace, ok = <-req.Stream; ok {
+					ctx.SSEvent("data", peace)
+				}
+				return ok
+			})
+
 		} else {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": "not enough parameters. has to be language code, text and user id"})
 		}

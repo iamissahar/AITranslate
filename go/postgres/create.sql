@@ -12,20 +12,21 @@ CREATE TABLE Responses (
 );
 
 CREATE TABLE Content (
-    content_index INT DEFAULT 0 NOT NULL,
+    id SERIAL PRIMARY KEY,
     response_id VARCHAR(256) NOT NULL,
     object VARCHAR(100) DEFAULT '' NOT NULL,
     text VARCHAR(256) DEFAULT '' NOT NULL,
-    PRIMARY KEY(content_index, response_id),
-    FOREIGN KEY (response_id) REFERENCES Responses(id) ON DELETE CASCADE
+    finish_reason VARCHAR(256) DEFAULT '' NOT NULL,
+    FOREIGN KEY (response_id) REFERENCES Responses(id) ON DELETE CASCADE,
+    UNIQUE (response_id, id)
 );
 
 CREATE TABLE Relations (
     user_id INT REFERENCES Users(id) ON DELETE CASCADE,
     response_id VARCHAR(256) NOT NULL,
-    content_index INT NOT NULL,
-    PRIMARY KEY(user_id, response_id, content_index),
-    FOREIGN KEY (response_id, content_index)
-        REFERENCES Content(response_id, content_index)
+    content_id INT NOT NULL,
+    PRIMARY KEY(user_id, response_id, content_id),
+    FOREIGN KEY (response_id, content_id)
+        REFERENCES Content(response_id, id)
         ON DELETE CASCADE
 );

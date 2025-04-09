@@ -2,8 +2,9 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import ValidationError
 import psycopg2
-import httpx
+import requests
 import asyncio
+import sseclient
 import json
 import st_types as types
 import os
@@ -11,33 +12,38 @@ import os
 app = FastAPI()
 con = types.Connection()
 
-MODEL = "MODEL_TYPE"
+MODEL = "openchat-3.5-1210"
 URL = "http://localhost:18888/v1/chat/completions" 
 
 def callOpenChat(r: types.RequestResponse, con: types.Connection, istest: bool) -> dict:
-    headers = {"Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}",
-               "Content-Type": "application/json"}
+    headers = {"Content-Type": "application/json", 
+               "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}"}
     
-    req = types.OpenChatReq(
-        input=r.text, 
-        model=MODEL, 
-        instructions=f"Translate the text I give you to the language: {r.language}. Answer with everything, but the actual translation. No need to put it in quotes, or anything else I need only pure translated text",
-        stream=False,
-        temperature=0.2
-    )
+    req = {"model": MODEL,
+           "messages": [
+               {"role": "transtalor", "content": f"you are being given a text in a langauge the user doesn't understand. Your duty is to translate it to the {r.language} language."},
+               {"role": "user", "content": "Привет, друг! Я твой русский коллега!"}],
+           "stream": "true"}
     
-    try:
-        with httpx.Client() as client:
-            with client.post(URL, json=req.model_dump(), headers=headers) as response:
-                data = response.json()
-                chunk = types.StreamChunk(**data)
-                if not istest and chunk.choices and chunk.choices[0].delt and chunk.choices[0].delt.content:
-                    con.updateDB(r.userID, chunk)
-                return types.RequestResponse(user_id=r.userID, langauge_code=r.language, text=chunk.choices[0].delt.content)
-    except httpx.RequestError as err:
-        raise HTTPException(status_code=502, detail=f"Error connecting to source: {str(err)}")
-    except httpx.HTTPStatusError as err:
-        raise HTTPException(status_code=err.response.status_code, detail="Source returned an error")
+    request = requests.post(URL, stream=True, headers=headers, json=req)
+    client = sseclient.SSEClient(request)
+    
+    for event in client.events():
+        if event.data != "[DONE]":
+            print(json.loads(event.data)['choices'][0]['text'], end="", flush=True)
+    
+    # try:
+    #     with httpx.Client() as client:
+    #         with client.post(URL, json=req.model_dump(), headers=headers) as response:
+    #             data = response.json()
+    #             chunk = types.StreamChunk(**data)
+    #             if not istest and chunk.choices and chunk.choices[0].delt and chunk.choices[0].delt.content:
+    #                 con.updateDB(r.userID, chunk)
+    #             return types.RequestResponse(user_id=r.userID, langauge_code=r.language, text=chunk.choices[0].delt.content)
+    # except httpx.RequestError as err:
+    #     raise HTTPException(status_code=502, detail=f"Error connecting to source: {str(err)}")
+    # except httpx.HTTPStatusError as err:
+    #     raise HTTPException(status_code=err.response.status_code, detail="Source returned an error")
 
 def mainHandler(req: types.RequestResponse, con: types.Connection):
     try:
