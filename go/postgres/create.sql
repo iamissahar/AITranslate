@@ -2,7 +2,8 @@ CREATE TABLE Users (
     id SERIAL PRIMARY KEY,
     ip VARCHAR(45) DEFAULT '' NOT NULL,
     attempts INT DEFAULT 0  NOT NULL,
-    language VARCHAR(10) DEFAULT '' NOT NULL
+    language VARCHAR(10) DEFAULT '' NOT NULL,
+    is_chosen INT DEFAULT 0 NOT NULL
 );
 
 CREATE TABLE Responses (
@@ -15,7 +16,7 @@ CREATE TABLE Content (
     id SERIAL PRIMARY KEY,
     response_id VARCHAR(256) NOT NULL,
     object VARCHAR(100) DEFAULT '' NOT NULL,
-    text VARCHAR(256) DEFAULT '' NOT NULL,
+    text TEXT DEFAULT '' NOT NULL,
     finish_reason VARCHAR(256) DEFAULT '' NOT NULL,
     FOREIGN KEY (response_id) REFERENCES Responses(id) ON DELETE CASCADE,
     UNIQUE (response_id, id)

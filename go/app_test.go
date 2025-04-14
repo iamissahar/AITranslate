@@ -111,13 +111,13 @@ func checkRelations(t *testing.T) bool {
 func TestNewUser(t *testing.T) {
 	defer delUser(t)
 
-	assert.Equal(t, newUser(userID), false, "the result from it should be false")
-	assert.NotEqual(t, newUser(userID), true, "the result from it should be false")
+	assert.Equal(t, newUser(userID), true, "the result from it should be false")
+	assert.NotEqual(t, newUser(userID), false, "the result from it should be false")
 
 	createUser(t)
 
-	assert.Equal(t, newUser(userID), true, "the result from it should be true")
-	assert.NotEqual(t, newUser(userID), false, "the result from it should be true")
+	assert.Equal(t, newUser(userID), false, "the result from it should be true")
+	assert.NotEqual(t, newUser(userID), true, "the result from it should be true")
 }
 
 func TestAddUser(t *testing.T) {

@@ -26,7 +26,7 @@ rungo:
 	password_db=postgres \
 	dbname_db=postgres \
 	sslmode_db=disable \
-	go run cmd/main.go
+	go run ./cmd
 
 run.db:
 	docker run -d --rm --name st-postgres-container \

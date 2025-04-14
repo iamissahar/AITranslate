@@ -1,12 +1,8 @@
 {
-    "manifest_version": 3,
-    "name": "Smart Translation",
-    "description": "Smart Translation - Instantly translate any selected text into your native (or chosen) language using GPT. Simply highlight the text, right-click, and select 'Smart Translation' from the context menu. A popup window with the translation will appear next to the original text.",
-    "version": "1.0",
-    "permissions": [
-      "activeTab",
-      "storage"
-    ],
+    "name": "AI Translation",
+    "description": "Have you ever used Google Translate, and thought it would've been much better, if the translation results were more accurate? Here's your solution! AI Translate is a simpe, light, and suitable tool for anybody! Are you not one language speaker? You probably have noticed some strange words you didn't know, haven't you? You were absolutely about to google it, I am sure!\n\nAre you a one language speaker? This tools is even more suitable for you! There are so much content on other langauges you don't know, but everytime you had to google those words, and the translation results were dissapointing.\n\nAI translate is very simple tool, just highlight a peace of text a on web page, click on it with your right mouse button, and click on the logo! You're going to see a pop up window with your translated text.\n\nEven better, no setting needed! AI Translate takes the language of your browser and set it as a default one. Don't worry though, you always have an opportinuty to change your language in the extention's settings.\n\nIf you've read till the moment, why wouldn't you try it then?",
+    "version": "0.1.0",
+    "permissions": ["activeTab", "storage", "contextMenus"],
     "background": {
       "service_worker": "js/background.js"
     },

@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 	"gopkg.in/gomail.v2"
 )
@@ -31,10 +30,11 @@ var (
 )
 
 type Request struct {
-	UserID int    `json:"user_id"`
-	Lang   string `json:"lang_code"`
-	Text   string `json:"text"`
-	Stream chan *Response
+	UserID   int    `json:"user_id"`
+	Lang     string `json:"lang_code"`
+	Text     string `json:"text"`
+	Stream   chan *Response
+	FinalRes *string `json:"final_text"`
 }
 
 type Response struct {
@@ -111,7 +111,7 @@ func newUser(userID int) bool {
 	if err != nil {
 		errorHandler(userID, 0, "newUser()", err)
 	}
-	return amount > 0
+	return amount == 0
 }
 
 func addUser(lang, ip string) int {
@@ -233,6 +233,7 @@ func startScanning(resp *http.Response, r *Request) {
 			if err != io.EOF {
 				errorHandler(r.UserID, i, "startScanning()", err)
 				isDone = true
+				fmt.Println("[DEBUG] the stream has ended in error")
 			}
 		}
 
@@ -242,7 +243,8 @@ func startScanning(resp *http.Response, r *Request) {
 				data := strings.TrimPrefix(linestr, "data: ")
 				if len(data) > 6 && data[:6] == "[DONE]" {
 					isDone = true
-					fmt.Println("The whole text response: ", cs.Text)
+					fmt.Println("[DEBUG] 'done' has been caught. stream's ended")
+					fmt.Println("[DEBUG] the text from the response: ", cs.Text)
 					updateDB(r.UserID, cs)
 				}
 				if !isDone {
@@ -281,13 +283,29 @@ func startScanning(resp *http.Response, r *Request) {
 	}
 }
 
+func isDefaultLanguage(req *Request) {
+	var i int
+	var lang string
+	err := Db.QueryRow("SELECT language, is_chosen FROM Users WHERE id = $1", req.UserID).Scan(&lang, &i)
+	if err != nil {
+		errorHandler(req.UserID, 0, "isDefaultLanguage()", err)
+	} else {
+		if i == 1 {
+			fmt.Printf("[DEBUG] the language {%s} has been chosen by user\n", lang)
+			req.Lang = lang
+		} else {
+			fmt.Printf("[DEBUG] the language {%s} hasn't been chosen by user\n", lang)
+		}
+	}
+}
+
 func callOpenAI(r *Request) {
 	defer close(r.Stream)
 	var resp *http.Response
 	openai := &OpenAIReq{
 		Model: model,
 		Messages: []*message{
-			{Role: "assistant", Content: fmt.Sprintf("you are being given a text in a langauge the user doesn't understand. your duty is to translate it to the %s language.", r.Lang)},
+			{Role: "assistant", Content: fmt.Sprintf("you are being given a text in a langauge the user doesn't understand. your duty is to translate it to the %s language.", Languages[r.Lang])},
 			{Role: "user", Content: r.Text}},
 		Stream:      true,
 		Temperature: 0.2,
@@ -296,17 +314,42 @@ func callOpenAI(r *Request) {
 	if err != nil {
 		errorHandler(r.UserID, 0, "callOpenAI()", err)
 	} else {
-		fmt.Printf("Request: %s\n", string(body))
+		fmt.Println("[DEBUG] request to OpenAI has been created and ready to be sent")
+		fmt.Printf("[DEBUG] request data: %s\n", string(body))
 		resp = makeRequest(r.UserID, body)
+		fmt.Println("[DEBUG] response from OpenAI has been caught and ready to be read")
 		startScanning(resp, r)
 	}
 }
 
-func Mainlogic(req *Request, ctx *gin.Context) {
+func Mainlogic(req *Request, ip string) {
 	if req.UserID == 0 || newUser(req.UserID) {
-		req.UserID = addUser(req.Lang, ctx.ClientIP())
+		fmt.Printf("[DEBUG] user {%d} hasn't been found\n", req.UserID)
+		req.UserID = addUser(req.Lang, ip)
+		fmt.Printf("[DEBUG] user {%d} has been added\n", req.UserID)
 	} else {
+		fmt.Printf("[DEBUG] user {%d} has been found\n", req.UserID)
 		increment(req.UserID)
+		fmt.Printf("[DEBUG] user's {%d} attempts have been incremented\n", req.UserID)
 	}
+	isDefaultLanguage(req)
 	callOpenAI(req)
+}
+
+func ChangeLanguage(req *Request, ip string) error {
+	if newUser(req.UserID) {
+		fmt.Printf("[DEBUG] user {%d} hasn't been found\n", req.UserID)
+		req.UserID = addUser(req.Lang, ip)
+		fmt.Println("[DEBUG] user {%d} has been added\n", req.UserID)
+	} else {
+		fmt.Println("[DEBUG] user {%d} has been found\n", req.UserID)
+	}
+
+	_, err := Db.Exec("UPDATE Users SET language = $1, is_chosen = 1 WHERE id = $2", req.Lang, req.UserID)
+	if err != nil {
+		errorHandler(req.UserID, 0, "ChangeLanguage()", err)
+	} else {
+		fmt.Println("[DEBUG] user's {%d} language {%s} has been successfuly changed\n", req.UserID, req.Lang)
+	}
+	return err
 }
