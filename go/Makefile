@@ -10,7 +10,7 @@ build.db:
 run.app:
 	docker run -d --rm --name st-app-container \
 	--network ST-network \
-	-p 8080:8080 \
+	-p 8090:8010 \
 	-e host_db=st-postgres-container \
 	-e port_db=5432 \
 	-e user_db=postgres \
@@ -30,6 +30,7 @@ rungo:
 
 run.db:
 	docker run -d --rm --name st-postgres-container \
+	--network ST-network \
 	-e POSTGRES_USER=postgres \
 	-e POSTGRES_PASSWORD=postgres \
 	-e POSTGRES_DB=postgres \
