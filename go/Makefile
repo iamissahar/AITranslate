@@ -8,7 +8,7 @@ build.db:
 	docker build -f Dockerfile.db -t st-postgres .
 
 run.app:
-	docker run -d --rm --name st-app-container \
+	docker run --rm --name st-app-container \
 	--network ST-network \
 	-p 8090:8010 \
 	-e host_db=st-postgres-container \
