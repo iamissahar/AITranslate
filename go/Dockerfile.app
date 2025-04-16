@@ -1,8 +1,8 @@
-FROM golang:1.22.5-bullseye AS cert-installer
+FROM golang:1.24.2-bullseye AS cert-installer
 
 WORKDIR /app
 
-FROM golang:1.22.5-bullseye AS builder
+FROM golang:1.24.2-bullseye AS builder
 
 WORKDIR /app
 
