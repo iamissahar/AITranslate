@@ -1,4 +1,4 @@
-module github.com/iamissahar/SmartTranslation
+module github.com/iamissahar/AITranslate
 
 go 1.23.0
 

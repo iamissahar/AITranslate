@@ -9,7 +9,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	app "github.com/iamissahar/SmartTranslation"
+	app "github.com/iamissahar/AITranslate"
 )
 
 func changeTheLanguage(router *gin.Engine) {
