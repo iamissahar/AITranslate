@@ -91,7 +91,10 @@ func startAPI() {
 	}))
 	stream(router)
 	changeTheLanguage(router)
-	router.Run(":8010")
+	err := router.RunTLS(":443", "/certs/fullchain.pem", "/certs/privkey.pem")
+	if err != nil {
+		panic(err)
+	}
 }
 
 func main() {

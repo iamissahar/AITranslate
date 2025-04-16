@@ -10,7 +10,9 @@ build.db:
 run.app:
 	docker run -d --rm --name st-app-container \
 	--network ST-network \
-	-p 8090:8010 \
+	-v /etc/letsencrypt/live/nathanissahar.me/fullchain.pem:/certs/fullchain.pem:ro \
+  	-v /etc/letsencrypt/live/nathanissahar.me/privkey.pem:/certs/privkey.pem:ro \
+	-p 443:443 \
 	-e host_db=st-postgres-container \
 	-e port_db=5432 \
 	-e user_db=postgres \
