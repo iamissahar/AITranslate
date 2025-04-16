@@ -38,8 +38,8 @@ run.db:
 	-e POSTGRES_DB=postgres \
 	-v ./postgres/create.sql:/docker-entrypoint-initdb.d/c \
 	-v ./pgdata:/var/lib/postgresql/data \
-	-p 5432:5432 \
 	st-postgres
+
 
 del.db:
 	docker stop st-postgres-container

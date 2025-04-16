@@ -240,7 +240,7 @@ async function responseHandler(reader, decoder) {
 async function sendRequest(text) {
     const language = localStorage.getItem("new_language") || navigator.language.slice(0, 2)
     try {
-        const response = await fetch("http://16.170.203.139:8090/translate", {
+        const response = await fetch("https://nathanissahar.me/translate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
