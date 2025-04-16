@@ -80,6 +80,7 @@ func startAPI() {
 	router := gin.Default()
 	router.Use(cors.New(cors.Config{
 		AllowOriginFunc: func(origin string) bool {
+			fmt.Println(">> Origin:", origin)
 			return origin == "chrome-extension://fplemnpbglnainedjaimekcgdkikkafc"
 		},
 		AllowMethods:     []string{"GET", "POST", "PATCH", "OPTIONS"},
