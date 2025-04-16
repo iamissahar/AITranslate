@@ -1,16 +1,16 @@
-chrome.runtime.onInstalled.addListener(() => {
-    chrome.contextMenus.create({
-      id: "AITranslate",
-      title: "AI Translation",
-      contexts: ["selection"]
-    });
+chrome.contextMenus.create({
+  id: "ai_translate",
+  title: "AI Translate",
+  contexts: ["selection"],
 });
-  
-chrome.contextMenus.onClicked.addListener((info, tab) => {
-    if (info.menuItemId === "AITranslate" && info.selectionText) {
-      chrome.tabs.sendMessage(tab.id, {
-        type: "TRANSLATE_SELECTION",
-        text: info.selectionText
-      });
-    }
+
+chrome.contextMenus.onClicked.addListener(function(info, tab) {
+  console.log("WTF?")
+  if (info.menuItemId === "ai_translate") {
+    console.log("sending message to content.js")
+    chrome.tabs.sendMessage(tab.id, {
+      action: "translate",
+      text: info.selectionText
+    });
+  }
 });

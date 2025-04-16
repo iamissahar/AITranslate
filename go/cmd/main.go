@@ -79,7 +79,7 @@ func stream(router *gin.Engine) {
 func startAPI() {
 	router := gin.Default()
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"},
+		AllowOrigins:     []string{"chrome-extension://fplemnpbglnainedjaimekcgdkikkafc"},
 		AllowMethods:     []string{"GET", "POST", "PATCH", "OPTIONS"},
 		AllowHeaders:     []string{"Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -88,7 +88,7 @@ func startAPI() {
 	}))
 	stream(router)
 	changeTheLanguage(router)
-	router.Run(":8080")
+	router.Run()
 }
 
 func main() {

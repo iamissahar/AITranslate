@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="../styles/popup.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="translation_window" class="window">
+    <div class="window-header">
+      <div class="icon-name-holder">
+        <img class="window-img" src="../icons/another_small_logo (1).png">
+        <span class="window-title">AI Translate</span>
+      </div>    
+      <button class="copy-btn" id="copy_btn" onclick="copyText()">
+        <img class="copy-logo" id="copy_logo" src="../icons/icon_copy_black.png">
+        <img class="checkmark-logo" id="checkmark_logo" src="../icons/checkmark_black.png">
+        <p class="btn-text" id="btn_text"> Copy</p>
+      </button>
+    </div>
+    <div class="window-content" id="window_content">
+      <img class="error-img" id="error_img" src="../icons/error.png">
+      Translating
+    </div>
+  </div>
+
+  <div id="hidden_holder">
+    <div id="hidden_headers">
+        <img id="hidden_img" class="window-img" src="../icons/another_small_logo (1).png">
+        <span id="hidden_title" class="window-title">AI Translate</span>
+    </div>
+    <div id="hidden_text_container"></div>
+  </div>
+
+  <script type="module" src="../js/popup.js"></script>
+</body>
+</html>
