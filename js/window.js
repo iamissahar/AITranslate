@@ -85,7 +85,7 @@ const allLanguages = [
 
 async function sendRequest2(status) {
     try {
-        const response = await fetch("http://16.170.203.139:8080/change_language", { 
+        const response = await fetch("http://16.170.203.139:8090/change_language", { 
             method: "PATCH", 
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({
