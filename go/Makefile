@@ -1,3 +1,6 @@
+include .env
+export
+
 net:
 	docker network create ST-network
 
