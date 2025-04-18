@@ -22,11 +22,11 @@ run.app:
 	-e password_db=postgres \
 	-e dbname_db=postgres \
 	-e sslmode_db=disable \
-	-e OPENAI_API_KEY=$(OPENAI_API_KEY)" \
-	-e email_from=$(email_from)" \
-	-e email_to=$(email_to)" \
-	-e email_password=$(email_password)" \
-	-e email_host=$(email_host)" \
+	-e OPENAI_API_KEY=$(OPENAI_API_KEY) \
+	-e email_from=$(email_from) \
+	-e email_to=$(email_to) \
+	-e email_password=$(email_password) \
+	-e email_host=$(email_host) \
 	st-app
 
 rungo:
@@ -36,11 +36,11 @@ rungo:
 	password_db=postgres \
 	dbname_db=postgres \
 	sslmode_db=disable \
-	-e OPENAI_API_KEY=$(OPENAI_API_KEY)" \
-	-e email_from=$(email_from)" \
-	-e email_to=$(email_to)" \
-	-e email_password=$(email_password)" \
-	-e email_host=$(email_host)" \
+	-e OPENAI_API_KEY=$(OPENAI_API_KEY) \
+	-e email_from=$(email_from) \
+	-e email_to=$(email_to) \
+	-e email_password=$(email_password) \
+	-e email_host=$(email_host) \
 	go run ./cmd
 
 run.db:
