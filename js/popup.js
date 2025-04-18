@@ -2,8 +2,7 @@ let onlyup, dotsInterval, wordsInterval, process
 let currentlineHeight = 20
 let stopgrowing = false
 let i = 0
-let popup, content, errorImg, copyLogo, checkmark, textBtn, div, divText, copyBtn, textNode
-const userID = localStorage.getItem("user_id") ? Number(localStorage.getItem("user_id")) : 0;
+let popup, content, errorImg, copyLogo, checkmark, textBtn, div, divText, copyBtn, textNod
 const processText = ["Translating", "Getting data", "Data processing", "Completing"]
 const lineInPX = 19.2
 const popupWidth = 400
@@ -177,108 +176,127 @@ function stopLoadingAnimation() {
     i = 0
 }
 
-async function responseHandler(reader, decoder) {
+function responseHandler(buffer, decoder, value) {
     var eventType, data;
-    var buffer = "";
-    while (true) {
-        let { value, done } = await reader.read();
-        if (done) break;
+    buffer.value += decoder.decode(value, { stream: true });
+    const parts = buffer.value.split("\n\n");
+    buffer.value = parts.pop();
 
-        buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split("\n\n");
-        buffer = parts.pop();
+    for (let part of parts) {
+        const lines = part.split("\n");
+        eventType = "message";
+        data = "";
 
-        for (let part of parts) {
-            const lines = part.split("\n");
-            eventType = "message";
-            data = "";
-
-            for (const line of lines) {
-                if (line.startsWith("event:")) {
-                    eventType = line.slice(6).trim();
-                } else if (line.startsWith("data:")) {
-                    data += line.slice(5).trim();
-                }
-            }
-
-            try {
-                const parsed = JSON.parse(data);
-                
-                if (eventType === "data") {
-                    if (process) {
-                        console.log("got first data from a stream")
-                        process = false;
-                        localStorage.setItem("user_id", parsed.user_id)
-                        turnOffAnimationAndCleanText().then(() => {
-                            stopLoadingAnimation();
-                            console.log("turned off text animation")
-                        });
-                    }
-                    
-                    regularTextChange(parsed.text).then(() => {
-                        console.log("changed the text content in two containers")
-                    })
-
-                } else if (eventType === "final_data") {
-                    console.log("final data comes")
-                    observer.disconnect();
-                    currentlineHeight = 20;
-                    stopgrowing = false;
-                    clearTheField().then(() => {
-                        console.log("stream ended OK")
-                    })
-                }
-
-            } catch (err) {
-                console.error("Failed to parse SSE JSON:", err, data);
+        for (const line of lines) {
+            if (line.startsWith("event:")) {
+                eventType = line.slice(6).trim();
+            } else if (line.startsWith("data:")) {
+                data += line.slice(5).trim();
             }
         }
+
+        try {
+            const parsed = JSON.parse(data);
+            
+            if (eventType === "data") {
+                if (process) {
+                    console.log("got first data from a stream")
+                    process = false;
+                    localStorage.setItem("user_id", parsed.user_id)
+                    turnOffAnimationAndCleanText().then(() => {
+                        stopLoadingAnimation();
+                        console.log("turned off text animation")
+                    });
+                }
+                
+                regularTextChange(parsed.text).then(() => {
+                    console.log("changed the text content in two containers")
+                })
+
+            } else if (eventType === "final_data") {
+                console.log("final data comes")
+                observer.disconnect();
+                currentlineHeight = 20;
+                stopgrowing = false;
+                clearTheField().then(() => {
+                    console.log("stream ended OK")
+                })
+            }
+
+        } catch (err) {
+            console.error("Failed to parse SSE JSON:", err, data);
+        }
     }
-    console.log("ended getting streaming data")
 }
 
 async function sendRequest(text) {
-    const language = localStorage.getItem("new_language") || navigator.language.slice(0, 2)
-    try {
-        const response = await fetch("https://nathanissahar.me/translate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
+    return new Promise((resolve, reject) => {
+        const userID = localStorage.getItem("user_id") ? Number(localStorage.getItem("user_id")) : 0;
+        const language = localStorage.getItem("new_language") || navigator.language.slice(0, 2)
+        chrome.runtime.sendMessage({
+            path: "translate",
+            json: JSON.stringify({
                 user_id: userID,
                 lang_code: language,
                 text: text,
             })
-        });
+        }, (response) => {
+            if (chrome.runtime.lastError) {
+                reject(chrome.runtime.lastError);
+            } else if (!response || response instanceof Error || !response.body) {
+                reject(new Error("Invalid response from background"));
+            } else {
+                resolve(response);
+            }
+            try {
+                if (!response.ok) {
+                    errorChanges().then(() => {
+                        stopLoadingAnimation()
+                        console.log(response.json())
+                    })
+                }
 
-        if (!response.ok) {
-            errorChanges().then(() => {
-                stopLoadingAnimation()
-                console.log(response.json())
-            })
-        }
-
-        return response
-
-    } catch(error) {
-        errorChanges().then(() => {
-            stopLoadingAnimation()
-            console.log(error)
+                return response
+            }catch(err) {
+                errorChanges().then(() => {
+                    stopLoadingAnimation()
+                    console.log(err)
+                })
+            }
         })
-        return null
-    }
+
+    })
 }
 
 async function streamTranslation(text) {
     console.log("starting streaming")
-    const response = await sendRequest(text)
-    if (response) {
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder("utf-8");
-        console.log("got acceptable response, starting handling the response")
-        await responseHandler(reader, decoder)
-        console.log("got handled the response")
-        copyBtn.style.display = "flex";
-    }
+    const port = chrome.runtime.connect({ name: "stream_data" });
+    const userID = localStorage.getItem("user_id") ? Number(localStorage.getItem("user_id")) : 0;
+    const language = localStorage.getItem("new_language") || navigator.language.slice(0, 2)
+    const decoder = new TextDecoder("utf-8");
+    var buffer = { value: "" };
+
+    port.postMessage({
+        user_id: userID,
+        lang_code: language,
+        text: text,
+    });
+
+
+    port.onMessage.addListener((msg) => {
+        if (msg.done) {
+            console.log("stream ends")
+            copyBtn.style.display = "flex";
+        } else if (msg.error) {
+            console.log("got an error")
+        } else if (msg.chunk) {
+            responseHandler(buffer, decoder, msg.chunk)
+        }
+    })
+
+    port.onDisconnect.addListener(() => {
+        console.log("Port disconnected");
+    });
 }
 
 function startLoadingAnimation() {

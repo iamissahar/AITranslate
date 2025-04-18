@@ -90,6 +90,17 @@ type delta struct {
 	Content string `json:"content,omitempty"`
 }
 
+type errorData struct {
+	Message string `json:"message"`
+	Type    string `json:"type"`
+	Code    string `json:"code,omitempty"`
+	Param   string `json:"param,omitempty"`
+}
+
+type OpenAIError struct {
+	Err *errorData `json:"error"`
+}
+
 func errorHandler(userID, errid int, f string, err error) {
 	message := fmt.Sprintf("userID: %d,<br />function: %s,<br />errorID: %d,<br />error: %s", userID, f, errid, err.Error())
 	m := gomail.NewMessage()
@@ -238,41 +249,56 @@ func startScanning(resp *http.Response, r *Request) {
 		}
 
 		if err == nil {
-			linestr = string(lineb)
-			if strings.HasPrefix(linestr, "data: ") {
-				data := strings.TrimPrefix(linestr, "data: ")
-				if len(data) > 6 && data[:6] == "[DONE]" {
-					isDone = true
-					fmt.Println("[DEBUG] 'done' has been caught. stream's ended")
-					fmt.Println("[DEBUG] the text from the response: ", cs.Text)
-					updateDB(r.UserID, cs)
+			if i == 2 {
+				openError := new(OpenAIError)
+				if err = json.Unmarshal(lineb, openError); err == nil {
+					if openError.Err != nil {
+						err = fmt.Errorf("message: %s, type: %s, param: %s, code: %s",
+							openError.Err.Message, openError.Err.Type, openError.Err.Param, openError.Err.Code)
+						errorHandler(r.UserID, i, "startScanning()", err)
+						isDone = true
+						fmt.Println("[DEBUG] got caught an error from OpenAI API")
+					}
 				}
-				if !isDone {
-					if err = json.Unmarshal([]byte(data), &chunk); err != nil {
-						errorHandler(r.UserID, i, "callOpenAI()", err)
-					} else {
-						if cs.ID == "" && chunk.ID != "" {
-							cs.ID = chunk.ID
-						}
-						if cs.Created == 0 && chunk.Created != 0 {
-							cs.Created = chunk.Created
-						}
-						if cs.Model == "" && chunk.Model != "" {
-							cs.Model = chunk.Model
-						}
-						if cs.Object == "" && chunk.Object != "" {
-							cs.Object = chunk.Object
-						}
-						for _, choice := range chunk.Choices {
-							if choice != nil && choice.Delta != nil && choice.Delta.Content != "" && choice.FinishReason == nil {
-								cs.Text += choice.Delta.Content
-								rr := &Response{
-									UserID: r.UserID,
-									Text:   choice.Delta.Content,
+			}
+
+			if err == nil {
+				linestr = string(lineb)
+				if strings.HasPrefix(linestr, "data: ") {
+					data := strings.TrimPrefix(linestr, "data: ")
+					if len(data) > 6 && data[:6] == "[DONE]" {
+						isDone = true
+						fmt.Println("[DEBUG] 'done' has been caught. stream's ended")
+						fmt.Println("[DEBUG] the text from the response: ", cs.Text)
+						updateDB(r.UserID, cs)
+					}
+					if !isDone {
+						if err = json.Unmarshal([]byte(data), &chunk); err != nil {
+							errorHandler(r.UserID, i, "callOpenAI()", err)
+						} else {
+							if cs.ID == "" && chunk.ID != "" {
+								cs.ID = chunk.ID
+							}
+							if cs.Created == 0 && chunk.Created != 0 {
+								cs.Created = chunk.Created
+							}
+							if cs.Model == "" && chunk.Model != "" {
+								cs.Model = chunk.Model
+							}
+							if cs.Object == "" && chunk.Object != "" {
+								cs.Object = chunk.Object
+							}
+							for _, choice := range chunk.Choices {
+								if choice != nil && choice.Delta != nil && choice.Delta.Content != "" && choice.FinishReason == nil {
+									cs.Text += choice.Delta.Content
+									rr := &Response{
+										UserID: r.UserID,
+										Text:   choice.Delta.Content,
+									}
+									r.Stream <- rr
+								} else if choice.FinishReason != nil {
+									cs.FinishReason = *choice.FinishReason
 								}
-								r.Stream <- rr
-							} else if choice.FinishReason != nil {
-								cs.FinishReason = *choice.FinishReason
 							}
 						}
 					}

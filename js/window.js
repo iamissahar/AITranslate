@@ -84,31 +84,26 @@ const allLanguages = [
 ];
 
 async function sendRequest2(status) {
-    try {
-        const response = await fetch("https://nathanissahar.me/change_language", { 
-            method: "PATCH", 
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-                user_id: userID,
-                lang_code: selectedLanguage,
-            })});
-
+    const userID = localStorage.getItem("user_id") ? Number(localStorage.getItem("user_id")) : 0;
+    chrome.runtime.sendMessage({
+        path: "change_language",
+        json: JSON.stringify({
+            user_id: userID,
+            lang_code: selectedLanguage,
+        })
+    }, (response) => {
         if (response.ok) {
-            status.innerText = "Success!"
-            const body = await response.json()
+            status.innerText = "Success!";
+            const body = response.data;
             localStorage.setItem("new_language", selectedLanguage);
-            localStorage.setItem("user_id", body.user_id)
+            localStorage.setItem("user_id", body.user_id);
         } else {
             status.innerText = "Oops! Something went wrong!";
+            console.error(response.error);
         }
-    
-        return response
-
-    } catch (error) {
-        status.innerText = "Request failed!";
-        console.error(error);
-        return null
-    }
+  
+      return response;
+    });
 }
 
 async function changeLanguage() {

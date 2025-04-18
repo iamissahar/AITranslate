@@ -3,7 +3,7 @@
   "name": "AI Translation",
   "description": "AI Translation",
   "version": "0.1.0",
-  "permissions": ["activeTab", "storage", "contextMenus", "http://localhost:8080/*"],
+  "permissions": ["activeTab", "storage", "contextMenus", "https://nathanissahar.me/"],
   "background": {
     "service_worker": "js/background.js",
     "type": "module"
