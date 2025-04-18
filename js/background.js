@@ -90,7 +90,7 @@ chrome.runtime.onConnect.addListener((port) => {
             const { done, value } = await reader.read();
             if (done) break;
             console.log(value)
-            port.postMessage({ chunk: value });
+            port.postMessage({ chunk: Array.from(value) });
         }
 
         console.log("stream ends well")

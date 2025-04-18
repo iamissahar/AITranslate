@@ -17,6 +17,7 @@ import (
 )
 
 const (
+	promt    string = "Translate the following text, either a word or a phrase, into the %s [target] language. If the source and target languages are the same, simply return the text exactly as it is, without any modifications. If the source is a word, identify the part of speech (e.g., noun, verb, adjective, etc) before translating. If it is a phrase, translate the entire phrase. Do not add any additional information or explanations, just provide the translation."
 	url      string = "https://api.openai.com/v1/chat/completions"
 	model    string = "gpt-3.5-turbo"
 	response string = "response"
@@ -331,7 +332,7 @@ func callOpenAI(r *Request) {
 	openai := &OpenAIReq{
 		Model: model,
 		Messages: []*message{
-			{Role: "assistant", Content: fmt.Sprintf("you are being given a text in a langauge the user doesn't understand. your duty is to translate it to the %s language.", Languages[r.Lang])},
+			{Role: "assistant", Content: fmt.Sprintf(promt, Languages[r.Lang])},
 			{Role: "user", Content: r.Text}},
 		Stream:      true,
 		Temperature: 0.2,

@@ -290,7 +290,8 @@ async function streamTranslation(text) {
         } else if (msg.error) {
             console.log("got an error")
         } else if (msg.chunk) {
-            responseHandler(buffer, decoder, msg.chunk)
+            const uint8array = new Uint8Array(msg.chunk)
+            responseHandler(buffer, decoder, uint8array)
         }
     })
 
