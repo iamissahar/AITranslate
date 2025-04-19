@@ -1,8 +1,9 @@
 let onlyup, dotsInterval, wordsInterval, process
-let currentlineHeight = 20
+let currentlineHeight = 10
 let stopgrowing = false
 let i = 0
-let popup, content, errorImg, copyLogo, checkmark, textBtn, div, divText, copyBtn, textNod
+let popup, content, errorImg, copyLogo, checkmark, textBtn, div, divText, copyBtn, textNod, closeBtn
+let hiddenTagName, hiddenHost, visibleTagName, visibleHost
 const processText = ["Translating", "Getting data", "Data processing", "Completing"]
 const lineInPX = 19.2
 const popupWidth = 400
@@ -117,8 +118,8 @@ function errorChanges() {
         content.style.animation = "none"
         content.style.background = "none"
         content.style.color = "#0d0d0d"
-        textNode.textContent = "Sorry, I curently can't help you."
-        errorImg.style.visibility = "visible"
+        textNod.textContent = "Sorry, I curently can't help you."
+        errorImg.style.display = "block"
 
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
@@ -133,7 +134,7 @@ function turnOffAnimationAndCleanText() {
         content.style.animation = "none";
         content.style.background = "none";
         content.style.color = "#0d0d0d";
-        textNode.textContent = "";
+        textNod.textContent = "";
 
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
@@ -146,7 +147,7 @@ function turnOffAnimationAndCleanText() {
 function regularTextChange(text){
     return new Promise((resolve) => {
         divText.textContent += text;
-        textNode.textContent += text;
+        textNod.textContent += text;
 
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
@@ -202,7 +203,7 @@ function responseHandler(buffer, decoder, value) {
                 if (process) {
                     console.log("got first data from a stream")
                     process = false;
-                    localStorage.setItem("user_id", parsed.user_id)
+                    chrome.storage.local.set({ user_id: parsed.user_id })
                     turnOffAnimationAndCleanText().then(() => {
                         stopLoadingAnimation();
                         console.log("turned off text animation")
@@ -229,50 +230,19 @@ function responseHandler(buffer, decoder, value) {
     }
 }
 
-async function sendRequest(text) {
-    return new Promise((resolve, reject) => {
-        const userID = localStorage.getItem("user_id") ? Number(localStorage.getItem("user_id")) : 0;
-        const language = localStorage.getItem("new_language") || navigator.language.slice(0, 2)
-        chrome.runtime.sendMessage({
-            path: "translate",
-            json: JSON.stringify({
-                user_id: userID,
-                lang_code: language,
-                text: text,
-            })
-        }, (response) => {
-            if (chrome.runtime.lastError) {
-                reject(chrome.runtime.lastError);
-            } else if (!response || response instanceof Error || !response.body) {
-                reject(new Error("Invalid response from background"));
-            } else {
-                resolve(response);
-            }
-            try {
-                if (!response.ok) {
-                    errorChanges().then(() => {
-                        stopLoadingAnimation()
-                        console.log(response.json())
-                    })
-                }
-
-                return response
-            }catch(err) {
-                errorChanges().then(() => {
-                    stopLoadingAnimation()
-                    console.log(err)
-                })
-            }
-        })
-
-    })
-}
-
 async function streamTranslation(text) {
     console.log("starting streaming")
     const port = chrome.runtime.connect({ name: "stream_data" });
-    const userID = localStorage.getItem("user_id") ? Number(localStorage.getItem("user_id")) : 0;
-    const language = localStorage.getItem("new_language") || navigator.language.slice(0, 2)
+    const userID = await new Promise((resolve) => {
+                chrome.storage.local.get(["user_id"], (result) => {
+                    resolve(Number(result.user_id) || 0);
+                });
+            });
+    const language = await new Promise((resolve) => {
+                chrome.storage.local.get(["new_language"], (result) => {
+                    resolve(result.new_language || navigator.language.slice(0, 2));
+                });
+            });
     const decoder = new TextDecoder("utf-8");
     var buffer = { value: "" };
 
@@ -286,7 +256,7 @@ async function streamTranslation(text) {
     port.onMessage.addListener((msg) => {
         if (msg.done) {
             console.log("stream ends")
-            copyBtn.style.display = "flex";
+            copyBtn.style.display = "flex"
         } else if (msg.error) {
             console.log("got an error")
         } else if (msg.chunk) {
@@ -306,7 +276,7 @@ function startLoadingAnimation() {
     wordsInterval = setInterval(() => {if (i + 1 > processText.length-1) {i = 0} else {i++}}, 4000)
     dotsInterval = setInterval(() => {
         dotCount = (dotCount + 1) % 4;
-        textNode.textContent = `${processText[i]}${'.'.repeat(dotCount)}`;
+        textNod.textContent = `${processText[i]}${'.'.repeat(dotCount)}`;
     }, 300);
 }
 
@@ -440,15 +410,40 @@ function generateUniqueTagName(base = "ai-translate") {
 
 function hidden() {
     return new Promise((resolve) => {
-        const host = document.createElement(generateUniqueTagName());
-        document.body.appendChild(host);
-        const shadow = host.attachShadow({ mode: 'open' });
+        hiddenTagName = generateUniqueTagName()
+        hiddenHost = document.createElement(hiddenTagName);
+        document.body.appendChild(hiddenHost);
+        const shadow = hiddenHost.attachShadow({ mode: 'open' });
         const windowImg = chrome.runtime.getURL('icons/very_small_logo.png')
 
         const template = document.createElement('template');
         template.innerHTML = `
             <style>
-                @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap");
+                @font-face {
+                    font-family: 'Inter';
+                    src: url('${chrome.runtime.getURL("fonts/Inter-Regular.ttf")}') format('truetype');
+                    font-weight: 400;
+                    font-style: normal;
+                }
+                @font-face {
+                    font-family: 'Inter';
+                    src: url('${chrome.runtime.getURL("fonts/Inter-SemiBold.ttf")}') format('truetype');
+                    font-weight: 600;
+                    font-style: normal;
+                }
+                @font-face {
+                    font-family: 'Inter';
+                    src: url('${chrome.runtime.getURL("fonts/Inter-Bold.ttf")}') format('truetype');
+                    font-weight: 700;
+                    font-style: normal;
+                }
+                @font-face {
+                    font-family: 'Inter';
+                    src: url('${chrome.runtime.getURL("fonts/Inter-Black.ttf")}') format('truetype');
+                    font-weight: 900;
+                    font-style: normal;
+                }
+                    
                 #hidden_holder {
                     visibility: hidden;
                     display: flex;
@@ -470,6 +465,7 @@ function hidden() {
                     font-size: 16px;
                     line-height: 1.5;
                     word-wrap: break-word; 
+                    height: 100%;
                 }
 
                 #hidden_headers {
@@ -513,18 +509,44 @@ function hidden() {
 
 function visible() {
     return new Promise((resolve) => {
-        const host = document.createElement(generateUniqueTagName());
-        document.body.appendChild(host);
-        const shadow = host.attachShadow({ mode: 'open' });
+        visibleTagName = generateUniqueTagName()
+        visibleHost = document.createElement(visibleTagName);
+        document.body.appendChild(visibleHost);
+        const shadow = visibleHost.attachShadow({ mode: 'open' });
         const smallLogo = chrome.runtime.getURL("icons/very_small_logo.png")
         const copyLogoImg = chrome.runtime.getURL("icons/icon_copy_black.png")
+        const closeLogoImg = chrome.runtime.getURL("icons/close_logo.png")
         const checkmarkLogo = chrome.runtime.getURL("icons/checkmark_black.png")
         const errImg = chrome.runtime.getURL("/icons/error.png")
 
         const template = document.createElement('template');
         template.innerHTML = `
             <style>
-                @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap");
+                @font-face {
+                    font-family: 'Inter';
+                    src: url('${chrome.runtime.getURL("fonts/Inter-Regular.ttf")}') format('truetype');
+                    font-weight: 400;
+                    font-style: normal;
+                }
+                @font-face {
+                    font-family: 'Inter';
+                    src: url('${chrome.runtime.getURL("fonts/Inter-SemiBold.ttf")}') format('truetype');
+                    font-weight: 600;
+                    font-style: normal;
+                }
+                @font-face {
+                    font-family: 'Inter';
+                    src: url('${chrome.runtime.getURL("fonts/Inter-Bold.ttf")}') format('truetype');
+                    font-weight: 700;
+                    font-style: normal;
+                }
+                @font-face {
+                    font-family: 'Inter';
+                    src: url('${chrome.runtime.getURL("fonts/Inter-Black.ttf")}') format('truetype');
+                    font-weight: 900;
+                    font-style: normal;
+                }
+
                 .window {
                     display: none;
                     position: fixed;
@@ -567,6 +589,10 @@ function visible() {
                     font-weight: 600;
                 }
 
+                .button-holder {
+                    display: flex;
+                }
+
                 .copy-btn {
                     display: none;
                     align-items: center;
@@ -598,6 +624,18 @@ function visible() {
                     height: 12px;
                 }
 
+                .close-btn {
+                    display: block;
+                    background-color: #c6c6c6;
+                    border: none;
+                    padding: 6px 0px 5px 15px;
+                    cursor: pointer;
+                }
+
+                .close-logo {
+                    width: 12px;
+                    height: 12px;
+                }
 
                 .window-content {
                     display: flex;
@@ -633,8 +671,7 @@ function visible() {
                 }
 
                 .error-img {
-                    visibility: hidden;
-                    display: block;
+                    display: none;
                     width: 17px;
                     height: 17px;
                     vertical-align: middle;
@@ -656,19 +693,23 @@ function visible() {
                     <div class="icon-name-holder">
                         <img class="window-img" src=${smallLogo}>
                         <span class="window-title">AI Translate</span>
-                    </div>    
-                    <button class="copy-btn" id="copy_btn">
-                        <img class="copy-logo" id="copy_logo" src=${copyLogoImg}>
-                        <img class="checkmark-logo" id="checkmark_logo" src=${checkmarkLogo}>
-                        <p class="btn-text" id="btn_text"> Copy</p>
-                    </button>
+                    </div>
+                    <div class="button-holder">    
+                        <button class="copy-btn" id="copy_btn">
+                            <img class="copy-logo" id="copy_logo" src=${copyLogoImg}>
+                            <img class="checkmark-logo" id="checkmark_logo" src=${checkmarkLogo}>
+                            <p class="btn-text" id="btn_text"> Copy</p>
+                        </button>
+                        <button class="close-btn" id="close_btn">
+                            <img class="close-logo" id="close_logo" src=${closeLogoImg}>
+                        </button>
+                    </div>
                 </div>
                 <div class="window-content" id="window_content">
                     <img class="error-img" id="error_img" src=${errImg}>
                     Translating
                 </div>
-            </div>
-        `;
+            </div>`;
 
         shadow.appendChild(template.content.cloneNode(true));
         resolve(shadow);
@@ -692,15 +733,12 @@ function dataIntoLets(hidden, visible) {
     checkmark = visible.getElementById('checkmark_logo')
     textBtn = visible.getElementById('btn_text')
     div = hidden.getElementById('hidden_holder');
-    textNode = content.childNodes[2];
-    console.log("content.childNodes: ", content.childNodes, "textNode.nodeType = ",textNode.nodeType, Node.TEXT_NODE)
+    textNod = content.childNodes[2];
+    console.log("content.childNodes: ", content.childNodes, "textNod.nodeType = ",textNod.nodeType, Node.TEXT_NODE)
     divText = hidden.getElementById('hidden_text_container')
     copyBtn = visible.getElementById('copy_btn')
-    copyBtn.addEventListener('click', function() {
-        copyText().then(() => {
-            console.log("text copied");
-        });
-    });
+    closeBtn = visible.getElementById('close_btn')
+    addListeners()
 }
 
 function init() {

@@ -11,8 +11,8 @@
   "action": {
     "default_popup": "html/window.html",
     "default_icon": {
-      "16": "icons/logo_6.png",
-      "48": "icons/logo_6.png",
+      "16": "icons/logo16x16.png",
+      "48": "icons/very_small_logo.png",
       "128": "icons/logo_6.png"
     }
   },
@@ -25,7 +25,13 @@
   "host_permissions": ["<all_urls>"],
   "web_accessible_resources": [
     {
-      "resources": ["icons/*"],
+      "resources": [
+        "icons/*", 
+        "fonts/Inter-Regular.ttf",
+        "fonts/Inter-SemiBold.ttf",
+        "fonts/Inter-Bold.ttf",
+        "fonts/Inter-Black.ttf"
+      ],
       "matches": ["<all_urls>"]
     }
   ]

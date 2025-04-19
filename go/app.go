@@ -17,7 +17,19 @@ import (
 )
 
 const (
-	promt    string = "Translate the following text, either a word or a phrase, into the %s [target] language. If the source and target languages are the same, simply return the text exactly as it is, without any modifications. If the source is a word, identify the part of speech (e.g., noun, verb, adjective, etc) before translating. If it is a phrase, translate the entire phrase. Do not add any additional information or explanations, just provide the translation."
+	promt string = `
+Translate the following text (a word or phrase) into %s [target language].
+
+- If the source and target languages are the same, return the original text unchanged.
+- If it's a full phrase or sentence, just translate it.
+- If it's a single word or a very short phrase without context, follow the Cambridge Dictionary style: 
+	• Identify the part of speech, using the target language, and place it in square brackets (e.g., [nom], [verbe], [adjetivo], etc.)
+	• For each common meaning:
+		- Provide a context/situation where it might be used (bold)
+		- The definition (plain text)
+		- An example sentence (italicized)
+
+Do not add any explanations or extra text outside of the translations.`
 	url      string = "https://api.openai.com/v1/chat/completions"
 	model    string = "gpt-3.5-turbo"
 	response string = "response"
@@ -367,16 +379,16 @@ func ChangeLanguage(req *Request, ip string) error {
 	if newUser(req.UserID) {
 		fmt.Printf("[DEBUG] user {%d} hasn't been found\n", req.UserID)
 		req.UserID = addUser(req.Lang, ip)
-		fmt.Println("[DEBUG] user {%d} has been added\n", req.UserID)
+		fmt.Printf("[DEBUG] user {%d} has been added\n", req.UserID)
 	} else {
-		fmt.Println("[DEBUG] user {%d} has been found\n", req.UserID)
+		fmt.Printf("[DEBUG] user {%d} has been found\n", req.UserID)
 	}
 
 	_, err := Db.Exec("UPDATE Users SET language = $1, is_chosen = 1 WHERE id = $2", req.Lang, req.UserID)
 	if err != nil {
 		errorHandler(req.UserID, 0, "ChangeLanguage()", err)
 	} else {
-		fmt.Println("[DEBUG] user's {%d} language {%s} has been successfuly changed\n", req.UserID, req.Lang)
+		fmt.Printf("[DEBUG] user's {%d} language {%s} has been successfuly changed\n", req.UserID, req.Lang)
 	}
 	return err
 }

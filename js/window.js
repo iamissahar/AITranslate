@@ -84,47 +84,55 @@ const allLanguages = [
 ];
 
 async function sendRequest2(status) {
-    const userID = localStorage.getItem("user_id") ? Number(localStorage.getItem("user_id")) : 0;
+    const userID = await new Promise((resolve) => {
+        chrome.storage.local.get(["user_id"], function(result) {
+            resolve(Number(result.user_id) || 0)
+        })
+    })
     chrome.runtime.sendMessage({
         path: "change_language",
-        json: JSON.stringify({
+        json: {
             user_id: userID,
             lang_code: selectedLanguage,
-        })
+        }
     }, (response) => {
         if (response.ok) {
             status.innerText = "Success!";
             const body = response.data;
-            localStorage.setItem("new_language", selectedLanguage);
-            localStorage.setItem("user_id", body.user_id);
+            chrome.storage.local.set({
+                new_language: selectedLanguage,
+                user_id: body.user_id
+            })
         } else {
             status.innerText = "Oops! Something went wrong!";
             console.error(response.error);
         }
-  
-      return response;
     });
 }
 
+
 async function changeLanguage() {
     const status = document.getElementById('status_change')
-    const response = await sendRequest2(status)
-    if (response) {
-        status.classList.add('visible')
+    await sendRequest2(status)
+    status.classList.add('visible')
 
-        setTimeout(() => {
-            status.classList.remove('visible')
-        }, 1500);
+    setTimeout(() => {
+        status.classList.remove('visible')
+    }, 1500);
 
-        setTimeout(() => {
-            changeBtn.classList.remove('visible');
-        }, 3000)
-    }
+    setTimeout(() => {
+        changeBtn.classList.remove('visible');
+    }, 3000)
 }
 
 
-function populateLanguageDropdown() {
-    const defaultLanguage = localStorage.getItem("new_language") || navigator.language.slice(0, 2)
+async function populateLanguageDropdown() {
+    const result = await new Promise((resolve) => {
+        chrome.storage.local.get(["new_language"], function(result) {
+            resolve(result.new_language || navigator.language.slice(0, 2))
+        })
+    })
+    const defaultLanguage = result
     const selectedLan = allLanguages.find(lang => lang.code === defaultLanguage);
     
     allLanguages.forEach(lang => {
@@ -138,11 +146,18 @@ function populateLanguageDropdown() {
         dropdown.value = selectedLan.code;
     }
 }
-  
-dropdown.addEventListener('change', function() {
-    selectedLanguage = this.value;
-    changeBtn.classList.add('visible');
-});
 
+document.addEventListener("DOMContentLoaded", function() {
+    populateLanguageDropdown();
 
-populateLanguageDropdown();
+    if (changeBtn) {
+        changeBtn.addEventListener('click', function() {
+            changeLanguage();
+        });
+    }
+
+    dropdown.addEventListener('change', function() {
+        selectedLanguage = this.value;
+        changeBtn.classList.add('visible');
+    })
+})

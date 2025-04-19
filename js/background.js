@@ -1,30 +1,32 @@
 chrome.contextMenus.create({
   id: "ai_translate",
   title: "AI Translate",
-  contexts: ["selection"],
-});
+  contexts: ["selection", "frame"]
+})
 
 chrome.contextMenus.onClicked.addListener(function(info, tab) {
   if (info.menuItemId === "ai_translate") {
-    console.log("sending message to content.js")
-    chrome.tabs.sendMessage(tab.id, {
-      action: "translate",
-      text: info.selectionText
-    });
+      console.log("sending message to content.js")
+      chrome.tabs.sendMessage(tab.id, {
+        action: "translate",
+        text: info.selectionText
+      });
   }
 });
 
 async function request(json) {
   try {
+    console.log("Sending request:", json);
     const res = await fetch("https://nathanissahar.me/change_language", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: json,
+      body: JSON.stringify(json),
     });
     console.log("gotten result, starts reading")
     const data = await res.json();
-    return { ok: res.ok, data };
+    return { ok: res.ok, data: data };
   } catch (err) {
+    console.error("Request failed:", err);
     return { ok: false, error: err.toString() };
   }
 }
@@ -45,9 +47,11 @@ async function stream(json) {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.path === "change_language") {
 
-    request(message.json).then(response => {
+    const jsonData = typeof message.json === 'string' ? JSON.parse(message.json) : message.json;
+    
+    request(jsonData).then(response => {
       sendResponse(response);
-    })
+    });
 
     return true;
 
@@ -89,7 +93,6 @@ chrome.runtime.onConnect.addListener((port) => {
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            console.log(value)
             port.postMessage({ chunk: Array.from(value) });
         }
 
