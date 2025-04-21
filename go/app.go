@@ -28,6 +28,7 @@ Translate the following text (a word or phrase) into %s [target language].
 		- Provide a context/situation where it might be used (bold)
 		- The definition (plain text)
 		- An example sentence (italicized)
+		- Give an answer using HTML code (!important!)
 
 Do not add any explanations or extra text outside of the translations.`
 	url      string = "https://api.openai.com/v1/chat/completions"
