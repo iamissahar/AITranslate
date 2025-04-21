@@ -20,17 +20,32 @@ const (
 	promt string = `
 Translate the following text into %s [target language].
 
-Your response must be valid HTML and follow these strict rules:
+Return only valid HTML using these strict rules:
 
-- If the input is a full sentence or phrase with obvious context, translate it directly and wrap the result in a <p> tag.
-- If the input is a single word or a very short phrase that lacks context:
-    - Identify the part of speech in the target language and wrap it in <span class="pos">[noun]</span>
+1. If the input is a full sentence or phrase with clear context, just translate it and wrap the result in a <p> tag.
+
+2. If the input is a single word or a short phrase:
+    - Wrap the part of speech in: <span class="pos">[прикметник]</span>
     - For each common meaning:
-        - Add a context in <strong>...</strong>
-        - A definition in a <p>...</p>
-        - An example sentence in <em>...</em>
+        <p>
+            <strong>Context in target language</strong><br>
+            Definition text here.<br>
+            <em>Example sentence in target language.</em>
+        </p>
 
-Return only HTML with correct tags. Do not include explanations or formatting in Markdown. No labels. No enumeration. Just HTML.`
+Do NOT use Markdown (**bold**, _italic_). Use ONLY HTML tags.
+Do NOT use backtick characters.
+Return ONLY the HTML output.
+
+Example (for the English word "illustrative" in Ukrainian):
+
+<span class="pos">[прикметник]</span>
+<p>
+<strong>У навчальному контексті</strong><br>
+показовий, наочний<br>
+<em>Презентація включала показові приклади для пояснення концепції.</em>
+</p>
+`
 	url      string = "https://api.openai.com/v1/chat/completions"
 	model    string = "gpt-3.5-turbo"
 	response string = "response"
