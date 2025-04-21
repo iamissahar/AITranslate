@@ -18,19 +18,19 @@ import (
 
 const (
 	promt string = `
-Translate the following text (a word or phrase) into %s [target language].
+Translate the following text into %s [target language].
 
-- If the source and target languages are the same, return the original text unchanged.
-- If it's a full phrase or sentence, just translate it.
-- If it's a single word or a very short phrase without context, follow the Cambridge Dictionary style: 
-	• Identify the part of speech, using the target language, and place it in square brackets (e.g., [nom], [verbe], [adjetivo], etc.)
-	• For each common meaning:
-		- Provide a context/situation where it might be used (bold)
-		- The definition (plain text)
-		- An example sentence (italicized)
-		- Give an answer using HTML code tags to specify a new string, bold letter or anything else.
+Your response must be valid HTML and follow these strict rules:
 
-Do not add any explanations or extra text outside of the translations.`
+- If the input is a full sentence or phrase with obvious context, translate it directly and wrap the result in a <p> tag.
+- If the input is a single word or a very short phrase that lacks context:
+    - Identify the part of speech in the target language and wrap it in <span class="pos">[noun]</span>
+    - For each common meaning:
+        - Add a context in <strong>...</strong>
+        - A definition in a <p>...</p>
+        - An example sentence in <em>...</em>
+
+Return only HTML with correct tags. Do not include explanations or formatting in Markdown. No labels. No enumeration. Just HTML.`
 	url      string = "https://api.openai.com/v1/chat/completions"
 	model    string = "gpt-3.5-turbo"
 	response string = "response"
