@@ -38,7 +38,8 @@ async function stream(json) {
       headers: { "Content-Type": "application/json" },
       body: json,
     })
-    return response
+    const type = response.headers.get("Content-Type") || "";
+    return {content_type: type, resp: response}
   } catch(err) {
     return err
   }

@@ -22,35 +22,32 @@ Translate the following text into %s [target language].
 
 Return only valid HTML using these strict rules:
 
-1. If the input is a full sentence or phrase with clear context, just translate it and wrap the result in a <p> tag.
+1. If the input is a full sentence or phrase with clear context, just translate without anything but text.
 
-2. If the input is a single word or a short phrase:
-    - Wrap the part of speech in: <span class="pos">[прикметник]</span>
-    - For each common meaning:
-        <p>
-            <strong>Context in target language</strong><br>
-            Definition text here.<br>
-            <em>Example sentence in target language.</em>
-        </p>
-
-Do NOT use Markdown (**bold**, _italic_). Use ONLY HTML tags.
-Do NOT use backtick characters.
-Return ONLY the HTML output.
-
-Example (for the English word "illustrative" in Ukrainian):
-
-<span class="pos">[прикметник]</span>
-<p>
-<strong>У навчальному контексті</strong><br>
-показовий, наочний<br>
-<em>Презентація включала показові приклади для пояснення концепції.</em>
-</p>
+2. If the input is a single word or a short phrase that you have troubles understenging with not enough context:
+	- Find at least one, at most 5 meaning of the word or phrase
+	- return JSON in the following format:
+	{
+		"part_of_speech": "noun/adjective/verb/... in target language",
+		"meanings": [
+			{
+				"context": "<context in target language>",
+				"translation": "<translated meaning>",
+				"example": "<example sentence in target language>"
+			},
+			...
+		]
+	}
 `
-	url      string = "https://api.openai.com/v1/chat/completions"
-	model    string = "gpt-3.5-turbo"
-	response string = "response"
-	database string = "database"
-	golang   string = "golang"
+	url          string = "https://api.openai.com/v1/chat/completions"
+	model        string = "gpt-3.5-turbo"
+	response     string = "response"
+	database     string = "database"
+	golang       string = "golang"
+	partOfSpeech string = "^**_**^"
+	context      string = "*^*_*^*"
+	definition   string = "^^^_^^^"
+	example      string = "**&_&**"
 )
 
 var (
@@ -63,7 +60,14 @@ type Request struct {
 	Lang     string `json:"lang_code"`
 	Text     string `json:"text"`
 	Stream   chan *Response
+	OneWord  chan *OneWordResponse
 	FinalRes *string `json:"final_text"`
+	jsonObj  *bool
+}
+
+type OneWordResponse struct {
+	UserID  int         `json:"user_id"`
+	OneWord interface{} `json:"one_word"`
 }
 
 type Response struct {
@@ -128,6 +132,17 @@ type errorData struct {
 
 type OpenAIError struct {
 	Err *errorData `json:"error"`
+}
+
+type meaning struct {
+	Context     string `json:"context"`
+	Translation string `json:"translation"`
+	Example     string `json:"example"`
+}
+
+type TranslationResponse struct {
+	PartOfSpeech string    `json:"part_of_speech"`
+	Meanings     []meaning `json:"meanings"`
 }
 
 func errorHandler(userID, errid int, f string, err error) {
@@ -255,81 +270,109 @@ func makeRequest(userID int, body []byte) *http.Response {
 	return resp
 }
 
-func startScanning(resp *http.Response, r *Request) {
-	defer resp.Body.Close()
-
-	var (
-		chunk   StreamChunk
-		i       int = 2
-		lineb   []byte
-		err     error
-		linestr string
-		isDone  = false
-		cs      = new(CompleteStream)
-	)
-	reader := bufio.NewReader(resp.Body)
-	for !isDone {
-		if lineb, err = reader.ReadBytes('\n'); err != nil {
-			if err != io.EOF {
-				errorHandler(r.UserID, i, "startScanning()", err)
-				isDone = true
-				fmt.Println("[DEBUG] the stream has ended in error")
-			}
+func getLineOfBytes(reader *bufio.Reader, i, userID int, isDone *bool) ([]byte, error) {
+	lineb, err := reader.ReadBytes('\n')
+	if err != nil {
+		if err != io.EOF {
+			errorHandler(userID, i, "startScanning()", err)
+			*isDone = true
+			fmt.Println("[DEBUG] the request has ended in error")
 		}
+	}
+	return lineb, err
+}
 
-		if err == nil {
-			if i == 2 {
-				openError := new(OpenAIError)
-				if err = json.Unmarshal(lineb, openError); err == nil {
-					if openError.Err != nil {
-						err = fmt.Errorf("message: %s, type: %s, param: %s, code: %s",
-							openError.Err.Message, openError.Err.Type, openError.Err.Param, openError.Err.Code)
-						errorHandler(r.UserID, i, "startScanning()", err)
-						isDone = true
-						fmt.Println("[DEBUG] got caught an error from OpenAI API")
+func oneWordRequest(line []byte, isDone *bool) (*TranslationResponse, error) {
+	tr := new(TranslationResponse)
+	err := json.Unmarshal(line, tr)
+	if err == nil {
+		*isDone = true
+		fmt.Println("[DEBUG] got json from OpenAI API")
+	}
+	return tr, err
+}
+
+func openAPIError(line []byte, i, userID int, isDone *bool) error {
+	operr := new(OpenAIError)
+	err := json.Unmarshal(line, operr)
+	if err == nil {
+		if operr.Err != nil {
+			err = fmt.Errorf("message: %s, type: %s, param: %s, code: %s",
+				operr.Err.Message, operr.Err.Type, operr.Err.Param, operr.Err.Code)
+			errorHandler(userID, i, "startScanning()", err)
+			*isDone = true
+			fmt.Println("[DEBUG] got caught an error from OpenAI API")
+		}
+	}
+	return err
+}
+
+func handleStream(line []byte, cs *CompleteStream, i, userID int, stream *chan *Response, isDone *bool) {
+	chunk := new(StreamChunk)
+	linestr := string(line)
+	if strings.HasPrefix(linestr, "data: ") {
+		data := strings.TrimPrefix(linestr, "data: ")
+		if len(data) > 6 && data[:6] == "[DONE]" {
+			*isDone = true
+			fmt.Println("[DEBUG] 'done' has been caught. stream's ended")
+			fmt.Println("[DEBUG] the text from the response: ", cs.Text)
+			updateDB(userID, cs)
+		}
+		if !*isDone {
+			if err := json.Unmarshal([]byte(data), chunk); err != nil {
+				errorHandler(userID, i, "callOpenAI()", err)
+			} else {
+				if cs.ID == "" && chunk.ID != "" {
+					cs.ID = chunk.ID
+				}
+				if cs.Created == 0 && chunk.Created != 0 {
+					cs.Created = chunk.Created
+				}
+				if cs.Model == "" && chunk.Model != "" {
+					cs.Model = chunk.Model
+				}
+				if cs.Object == "" && chunk.Object != "" {
+					cs.Object = chunk.Object
+				}
+				for _, choice := range chunk.Choices {
+					if choice != nil && choice.Delta != nil && choice.Delta.Content != "" && choice.FinishReason == nil {
+						cs.Text += choice.Delta.Content
+						rr := &Response{
+							UserID: userID,
+							Text:   choice.Delta.Content,
+						}
+						*stream <- rr
+					} else if choice.FinishReason != nil {
+						cs.FinishReason = *choice.FinishReason
 					}
 				}
 			}
+		}
+	}
+}
 
-			if err == nil {
-				linestr = string(lineb)
-				if strings.HasPrefix(linestr, "data: ") {
-					data := strings.TrimPrefix(linestr, "data: ")
-					if len(data) > 6 && data[:6] == "[DONE]" {
-						isDone = true
-						fmt.Println("[DEBUG] 'done' has been caught. stream's ended")
-						fmt.Println("[DEBUG] the text from the response: ", cs.Text)
-						updateDB(r.UserID, cs)
+func startScanning(resp *http.Response, r *Request) {
+	defer resp.Body.Close()
+	var (
+		i      int = 2
+		isDone     = false
+		cs         = new(CompleteStream)
+		tr         = new(TranslationResponse)
+	)
+	reader := bufio.NewReader(resp.Body)
+	for !isDone {
+		line, err := getLineOfBytes(reader, i, r.UserID, &isDone)
+		if err == nil {
+			if i == 2 {
+				tr, err = oneWordRequest(line, &isDone)
+				if err != nil {
+					if err = openAPIError(line, i, r.UserID, &isDone); err != nil {
+						handleStream(line, cs, i, r.UserID, &r.Stream, &isDone)
 					}
-					if !isDone {
-						if err = json.Unmarshal([]byte(data), &chunk); err != nil {
-							errorHandler(r.UserID, i, "callOpenAI()", err)
-						} else {
-							if cs.ID == "" && chunk.ID != "" {
-								cs.ID = chunk.ID
-							}
-							if cs.Created == 0 && chunk.Created != 0 {
-								cs.Created = chunk.Created
-							}
-							if cs.Model == "" && chunk.Model != "" {
-								cs.Model = chunk.Model
-							}
-							if cs.Object == "" && chunk.Object != "" {
-								cs.Object = chunk.Object
-							}
-							for _, choice := range chunk.Choices {
-								if choice != nil && choice.Delta != nil && choice.Delta.Content != "" && choice.FinishReason == nil {
-									cs.Text += choice.Delta.Content
-									rr := &Response{
-										UserID: r.UserID,
-										Text:   choice.Delta.Content,
-									}
-									r.Stream <- rr
-								} else if choice.FinishReason != nil {
-									cs.FinishReason = *choice.FinishReason
-								}
-							}
-						}
+				} else {
+					r.OneWord <- &OneWordResponse{
+						UserID:  r.UserID,
+						OneWord: tr,
 					}
 				}
 			}
@@ -356,6 +399,7 @@ func isDefaultLanguage(req *Request) {
 
 func callOpenAI(r *Request) {
 	defer close(r.Stream)
+	defer close(r.OneWord)
 	var resp *http.Response
 	openai := &OpenAIReq{
 		Model: model,

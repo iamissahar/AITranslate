@@ -2,8 +2,9 @@ let onlyup, dotsInterval, wordsInterval, process
 let currentlineHeight = 10
 let stopgrowing = false
 let i = 0
-let popup, content, errorImg, copyLogo, checkmark, textBtn, div, divText, copyBtn, textNod, closeBtn
+let popup, content, errorImg, copyLogo, checkmark, textBtn, div, divText, copyBtn, textNod, closeBtn, isBusy
 let hiddenTagName, hiddenHost, visibleTagName, visibleHost
+let wordHolder = []
 const processText = ["Translating", "Getting data", "Data processing", "Completing"]
 const lineInPX = 19.2
 const popupWidth = 400
@@ -144,10 +145,36 @@ function turnOffAnimationAndCleanText() {
     });
 }
 
-function regularTextChange(text){
+function addInnerText(obj, objhidden, text) {
+    return new Promise((resolve) => {
+        objhidden.innerText += text
+        obj.innerText += text
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                resolve();
+            });
+        });
+    })
+}
+
+function regularTextChange(text) {
     return new Promise((resolve) => {
         divText.textContent += text;
-        textNod.textContent += text;
+        content.innerHTML += text;
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                resolve();
+            });
+        });
+    });
+}
+
+function clearAll() {
+    return new Promise((resolve) => {
+        divText.textContent = ""
+        content.innerHTML = ""
 
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
@@ -159,7 +186,7 @@ function regularTextChange(text){
 
 function clearTheField() {
     return new Promise((resolve) => {
-        divText.textContent = "";
+        divText.textContent = ""
 
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
@@ -177,8 +204,22 @@ function stopLoadingAnimation() {
     i = 0
 }
 
-function responseHandler(buffer, decoder, value) {
-    var eventType, data;
+function firstStep() {
+    if (process) {
+        console.log("got first data from a stream")
+        process = false;
+        chrome.storage.local.set({ user_id: parsed.user_id })
+        clearAll().then(() => {
+            turnOffAnimationAndCleanText().then(() => {
+                stopLoadingAnimation();
+                console.log("cleaned inner htmls & turned off text animation")
+            });
+        })
+    }
+}
+
+async function streamResponseHandler(buffer, decoder, value) {
+    var eventType, data, obj, objhidden;
     buffer.value += decoder.decode(value, { stream: true });
     const parts = buffer.value.split("\n\n");
     buffer.value = parts.pop();
@@ -198,35 +239,59 @@ function responseHandler(buffer, decoder, value) {
 
         try {
             const parsed = JSON.parse(data);
+            if (data) {
+                firstStep()
+            } 
             
             if (eventType === "data") {
-                if (process) {
-                    console.log("got first data from a stream")
-                    process = false;
-                    chrome.storage.local.set({ user_id: parsed.user_id })
-                    turnOffAnimationAndCleanText().then(() => {
-                        stopLoadingAnimation();
-                        console.log("turned off text animation")
-                    });
-                }
-                
-                regularTextChange(parsed.text).then(() => {
-                    console.log("changed the text content in two containers")
-                })
-
+                await regularTextChange(parsed.text)
             } else if (eventType === "final_data") {
                 console.log("final data comes")
                 observer.disconnect();
                 currentlineHeight = 20;
                 stopgrowing = false;
-                clearTheField().then(() => {
-                    console.log("stream ended OK")
-                })
+                await clearTheField()
             }
 
         } catch (err) {
             console.error("Failed to parse SSE JSON:", err, data);
         }
+    }
+}
+
+function insertOneWordStructure(oneWord) {
+    return new Promise((resolve) => {
+        var indx = 0
+
+        for (var j = 0; j < isBusy.length; j++) {
+            if (!isBusy[j] && indx < oneWord.meanings.length) {
+                const meaning = oneWord.meanings[indx]
+
+                wordHolder[j].aWord.style.display = "block"
+                wordHolder[j].partOfSpeech.innerText = `[${oneWord.part_of_speech}]`
+                wordHolder[j].context.innerText = meaning.context
+                wordHolder[j].translation.innerText = meaning.translation
+                wordHolder[j].example.innerText = meaning.example
+
+                isBusy[j] = true
+                indx++
+            }
+        }
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                resolve()
+            });
+        });
+    });
+}
+
+async function jsonResponseHandler(response) {
+    const parsed = JSON.parse(response)
+    if (parsed) {
+        firstStep()
+        chrome.storage.local.set({ user_id: parsed.user_id })
+        await insertOneWordStructure(parsed.one_word)
     }
 }
 
@@ -252,22 +317,26 @@ async function streamTranslation(text) {
         text: text,
     });
 
-
-    port.onMessage.addListener((msg) => {
-        if (msg.done) {
-            console.log("stream ends")
-            copyBtn.style.display = "flex"
-        } else if (msg.error) {
-            console.log("got an error")
-        } else if (msg.chunk) {
-            const uint8array = new Uint8Array(msg.chunk)
-            responseHandler(buffer, decoder, uint8array)
+    port.onMessage.addListener((response) => {
+        if (response.content_type === "application/json") {
+            jsonResponseHandler(response.resp)
+        } else if (response.content_type === "text/event-stream") {
+            var msg = response.resp
+            if (msg.done) {
+                console.log("stream ends")
+                copyBtn.style.display = "flex"
+            } else if (msg.error) {
+                console.log("got an error")
+            } else if (msg.chunk) {
+                const uint8array = new Uint8Array(msg.chunk)
+                streamResponseHandler(buffer, decoder, uint8array)
+            } 
         }
     })
 
-    port.onDisconnect.addListener(() => {
-        console.log("Port disconnected");
-    });
+    // port.onDisconnect.addListener(() => {
+    //     console.log("Port disconnected");
+    // });
 }
 
 function startLoadingAnimation() {
@@ -640,9 +709,6 @@ function visible() {
                 .window-content {
                     display: flex;
                     padding: 3% 4%;
-                    font-family: 'Inter', sans-serif;
-                    font-size: 16px;
-                    line-height: 1.5;
                     word-wrap: break-word; 
                     background: linear-gradient(
                         90deg,
@@ -687,6 +753,44 @@ function visible() {
                         background-position: 100% 0;
                     }
                 }
+
+                .phrase {
+                    display: none;
+                    line-height: 1.5;
+                    font-family: 'Inter', sans-serif;
+                    font-size: 16px;
+                }
+
+                .a-word {
+                    display: none;
+                }
+
+                .pos {
+                    line-height: 1.5;
+                    font-family: 'Inter', sans-serif;
+                    font-size: 16px;
+                    font-weight: 400;
+                }
+
+                .bold-title {
+                    font-family: 'Inter', sans-serif;
+                    font-weight: 700;
+                    font-size: 18px;
+                    line-height: 1.5;
+                }
+
+                .translated_word {
+                    font-family: 'Inter', sans-serif;
+                    font-size: 16px;
+                    line-height: 1.5;
+                }
+
+                .meaning {
+                    font-family: 'Inter', sans-serif;
+                    font-style: italic
+                    font-size: 16px;
+                    line-height: 1.5;
+                }
             </style>
             <div id="translation_window" class="window">
                 <div class="window-header">
@@ -694,7 +798,7 @@ function visible() {
                         <img class="window-img" src=${smallLogo}>
                         <span class="window-title">AI Translate</span>
                     </div>
-                    <div class="button-holder">    
+                    <div class="button-holder">
                         <button class="copy-btn" id="copy_btn">
                             <img class="copy-logo" id="copy_logo" src=${copyLogoImg}>
                             <img class="checkmark-logo" id="checkmark_logo" src=${checkmarkLogo}>
@@ -707,7 +811,50 @@ function visible() {
                 </div>
                 <div class="window-content" id="window_content">
                     <img class="error-img" id="error_img" src=${errImg}>
-                    Translating
+                    <div class="status-message" id="status_message">
+                        Translating
+                    </div>
+                    <div class="phrase" id="phrase"></div>
+                    <div class="a-word" id="a_word_1">
+                        <span class="pos" id="header_1"></span>
+                        <p>
+                            <div class="bold-title" id="bold_title_1"></div>
+                            <div class="translated-word" id="translated_word_1"></div>
+                            <div class="meaning" id="meaning_1"></div>
+                        </p>
+                    </div>
+                    <div class="a-word" id="a_word_2">
+                        <span class="pos" id="header_2"></span>
+                        <p>
+                            <div class="bold-title" id="bold_title_2"></div>
+                            <div class="translated-word" id="translated_word_2"></div>
+                            <div class="meaning" id="meaning_2"></div>
+                        </p>
+                    </div>
+                    <div class="a-word" id="a_word_3">
+                        <span class="pos" id="header_3"></span>
+                        <p>
+                            <div class="bold-title" id="bold_title_3"></div>
+                            <div class="translated-word" id="translated_word_3"></div>
+                            <div class="meaning" id="meaning_3"></div>
+                        </p>
+                    </div>
+                    <div class="a-word" id="a_word_4">
+                        <span class="pos" id="header_4"></span>
+                        <p>
+                            <div class="bold-title" id="bold_title_4"></div>
+                            <div class="translated-word" id="translated_word_4"></div>
+                            <div class="meaning" id="meaning_4"></div>
+                        </p>
+                    </div>
+                    <div class="a-word" id="a_word_5">
+                        <span class="pos" id="header_5"></span>
+                        <p>
+                            <div class="bold-title" id="bold_title_5"></div>
+                            <div class="translated-word" id="translated_word_5"></div>
+                            <div class="meaning" id="meaning_5"></div>
+                        </p>
+                    </div>
                 </div>
             </div>`;
 
@@ -738,6 +885,16 @@ function dataIntoLets(hidden, visible) {
     divText = hidden.getElementById('hidden_text_container')
     copyBtn = visible.getElementById('copy_btn')
     closeBtn = visible.getElementById('close_btn')
+    isBusy = [false, false, false, false, false]
+    for (let i = 1; i <= 5;i++) {
+        wordHolder[i-1] = {
+            aWord: visible.getElementById(`a_word_${i}`),
+            partOfSpeech: visible.getElementById(`header_${i}`),
+            context: visible.getElementById(`bold_title_${i}`),
+            translation: visible.getElementById(`translated_word_${i}`),
+            example: visible.getElementById(`meaning_${i}`),
+        }
+    }
     addListeners()
 }
 

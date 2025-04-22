@@ -51,21 +51,34 @@ func stream(router *gin.Engine) {
 			req.Stream = make(chan *app.Response)
 			go app.Mainlogic(req, ctx.ClientIP())
 
-			ctx.Header("Content-Type", "text/event-stream")
-			ctx.Header("Cache-Control", "no-cache")
-			ctx.Header("Connection", "keep-alive")
 			ctx.Stream(func(w io.Writer) bool {
 				var (
 					peace *app.Response
+					js    *app.OneWordResponse
 					ok    bool
 				)
 
-				if peace, ok = <-req.Stream; ok {
-					ctx.SSEvent("data", peace)
-				} else {
-					ctx.SSEvent("final_data", gin.H{"user_id": req.UserID, "final_text": req.FinalRes})
-					fmt.Println("[DEBUG] server's stream ends")
-				}
+				go func() {
+					ctx.Header("Content-Type", "text/event-stream")
+					ctx.Header("Cache-Control", "no-cache")
+					ctx.Header("Connection", "keep-alive")
+					if peace, ok = <-req.Stream; ok {
+						ctx.SSEvent("data", peace)
+					} else {
+						if req.FinalRes != nil && *(req).FinalRes != "" {
+							ctx.SSEvent("final_data", gin.H{"user_id": req.UserID, "final_text": req.FinalRes})
+							fmt.Println("[DEBUG] server's stream ends")
+						}
+					}
+				}()
+
+				func() {
+					ctx.Header("Content-Type", "application/json")
+					if js, ok = <-req.OneWord; ok {
+						ctx.JSON(http.StatusOK, js)
+					}
+				}()
+
 				return ok
 			})
 
