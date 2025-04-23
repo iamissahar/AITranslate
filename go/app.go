@@ -16,135 +16,6 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
-const (
-	promt string = `
-Translate the following text into %s [target language].
-
-Return only valid HTML using these strict rules:
-
-1. If the input is a full sentence or phrase with clear context, just translate without anything but text.
-
-2. If the input is a single word or a short phrase that you have troubles understenging with not enough context:
-	- Find at least one, at most 5 meaning of the word or phrase
-	- return JSON in the following format:
-	{
-		"part_of_speech": "noun/adjective/verb/... in target language",
-		"meanings": [
-			{
-				"context": "<context in target language>",
-				"translation": "<translated meaning>",
-				"example": "<example sentence in target language>"
-			},
-			...
-		]
-	}
-`
-	url          string = "https://api.openai.com/v1/chat/completions"
-	model        string = "gpt-3.5-turbo"
-	response     string = "response"
-	database     string = "database"
-	golang       string = "golang"
-	partOfSpeech string = "^**_**^"
-	context      string = "*^*_*^*"
-	definition   string = "^^^_^^^"
-	example      string = "**&_&**"
-)
-
-var (
-	authkey = os.Getenv("OPENAI_API_KEY")
-	Db      *sql.DB
-)
-
-type Request struct {
-	UserID   int    `json:"user_id"`
-	Lang     string `json:"lang_code"`
-	Text     string `json:"text"`
-	Stream   chan *Response
-	OneWord  chan *OneWordResponse
-	FinalRes *string `json:"final_text"`
-	jsonObj  *bool
-}
-
-type OneWordResponse struct {
-	UserID  int         `json:"user_id"`
-	OneWord interface{} `json:"one_word"`
-}
-
-type Response struct {
-	UserID int    `json:"user_id"`
-	Text   string `json:"text"`
-}
-
-type message struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
-type OpenAIReq struct {
-	Model       string     `json:"model"`
-	Messages    []*message `json:"messages"`
-	Stream      bool       `json:"stream"`
-	Temperature float64    `json:"temperature"`
-}
-
-type streamErr struct {
-	Message string `json:"message"`
-	Type    string `json:"type"`
-	Param   string `json:"param"`
-	Code    string `json:"code"`
-}
-
-type StreamChunk struct {
-	ID      string     `json:"id"`
-	Object  string     `json:"object"`
-	Created int64      `json:"created"`
-	Model   string     `json:"model"`
-	Choices []*choice  `json:"choices"`
-	Error   *streamErr `json:"error"`
-}
-
-type CompleteStream struct {
-	ID           string
-	Object       string
-	Created      int64
-	Model        string
-	FinishReason string
-	Text         string
-}
-
-type choice struct {
-	Delta        *delta  `json:"delta,omitempty"`
-	Index        int     `json:"index"`
-	FinishReason *string `json:"finish_reason,omitempty"`
-}
-
-type delta struct {
-	Role    string `json:"role,omitempty"`
-	Content string `json:"content,omitempty"`
-}
-
-type errorData struct {
-	Message string `json:"message"`
-	Type    string `json:"type"`
-	Code    string `json:"code,omitempty"`
-	Param   string `json:"param,omitempty"`
-}
-
-type OpenAIError struct {
-	Err *errorData `json:"error"`
-}
-
-type meaning struct {
-	Context     string `json:"context"`
-	Translation string `json:"translation"`
-	Example     string `json:"example"`
-}
-
-type TranslationResponse struct {
-	PartOfSpeech string    `json:"part_of_speech"`
-	Meanings     []meaning `json:"meanings"`
-}
-
 func errorHandler(userID, errid int, f string, err error) {
 	message := fmt.Sprintf("userID: %d,<br />function: %s,<br />errorID: %d,<br />error: %s", userID, f, errid, err.Error())
 	m := gomail.NewMessage()
@@ -287,12 +158,13 @@ func oneWordRequest(line []byte, isDone *bool) (*TranslationResponse, error) {
 	err := json.Unmarshal(line, tr)
 	if err == nil {
 		*isDone = true
+		fmt.Println(tr)
 		fmt.Println("[DEBUG] got json from OpenAI API")
 	}
 	return tr, err
 }
 
-func openAPIError(line []byte, i, userID int, isDone *bool) error {
+func openAPIError(line []byte, i, userID int, isDone *bool) {
 	operr := new(OpenAIError)
 	err := json.Unmarshal(line, operr)
 	if err == nil {
@@ -301,10 +173,10 @@ func openAPIError(line []byte, i, userID int, isDone *bool) error {
 				operr.Err.Message, operr.Err.Type, operr.Err.Param, operr.Err.Code)
 			errorHandler(userID, i, "startScanning()", err)
 			*isDone = true
+			fmt.Println(operr)
 			fmt.Println("[DEBUG] got caught an error from OpenAI API")
 		}
 	}
-	return err
 }
 
 func handleStream(line []byte, cs *CompleteStream, i, userID int, stream *chan *Response, isDone *bool) {
@@ -336,7 +208,10 @@ func handleStream(line []byte, cs *CompleteStream, i, userID int, stream *chan *
 				}
 				for _, choice := range chunk.Choices {
 					if choice != nil && choice.Delta != nil && choice.Delta.Content != "" && choice.FinishReason == nil {
-						cs.Text += choice.Delta.Content
+						switch s := cs.Text.(type) {
+						case string:
+							s += choice.Delta.Content
+						}
 						rr := &Response{
 							UserID: userID,
 							Text:   choice.Delta.Content,
@@ -357,25 +232,16 @@ func startScanning(resp *http.Response, r *Request) {
 		i      int = 2
 		isDone     = false
 		cs         = new(CompleteStream)
-		tr         = new(TranslationResponse)
 	)
 	reader := bufio.NewReader(resp.Body)
 	for !isDone {
 		line, err := getLineOfBytes(reader, i, r.UserID, &isDone)
 		if err == nil {
 			if i == 2 {
-				tr, err = oneWordRequest(line, &isDone)
-				if err != nil {
-					if err = openAPIError(line, i, r.UserID, &isDone); err != nil {
-						handleStream(line, cs, i, r.UserID, &r.Stream, &isDone)
-					}
-				} else {
-					r.OneWord <- &OneWordResponse{
-						UserID:  r.UserID,
-						OneWord: tr,
-					}
-				}
+				openAPIError(line, i, r.UserID, &isDone)
+				cs.Text = ""
 			}
+			handleStream(line, cs, i, r.UserID, &r.Stream, &isDone)
 		}
 		i++
 	}
@@ -397,14 +263,68 @@ func isDefaultLanguage(req *Request) {
 	}
 }
 
-func callOpenAI(r *Request) {
+func getResponseWithOpenAI(r *Request) (*TranslationResponse, error) {
+	var (
+		resp *http.Response
+		bb   []byte
+		op   = new(OpenAI)
+		tr   = new(TranslationResponse)
+	)
+	openai := &OpenAIReq{
+		Model: model,
+		Messages: []*message{
+			{Role: "assistant", Content: fmt.Sprintf(promtV2, Languages[r.Lang])},
+			{Role: "user", Content: r.Text}},
+		Stream:      true,
+		Temperature: 0.2,
+	}
+	body, err := json.Marshal(openai)
+	if err != nil {
+		errorHandler(r.UserID, 0, "getResponseWithOpenAI()", err)
+	} else {
+		fmt.Println("[DEBUG] request to OpenAI has been created and ready to be sent")
+		fmt.Printf("[DEBUG] request data: %s\n", string(body))
+		resp = makeRequest(r.UserID, body)
+		bb, err = io.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Println("[DEBUG] can't read the response data")
+			errorHandler(r.UserID, 1, "getResponseWithOpenAI()", err)
+		} else {
+			fmt.Println("[DEBUG] got response from OpenAI")
+			err = json.Unmarshal(bb, op)
+			if err != nil {
+				fmt.Println("[DEBUG] can't convert response data into go-stucture")
+				errorHandler(r.UserID, 2, "getResponseWithOpenAI()", err)
+			} else {
+				fmt.Println("[DEBUG] the response is valid")
+				err = json.Unmarshal([]byte(op.Choices[0].Message.Content), tr)
+				if err != nil {
+					fmt.Println("[DEBUG] can't convert content data into go-stucture")
+					errorHandler(r.UserID, 3, "getResponseWithOpenAI()", err)
+				} else {
+					fmt.Println("[DEBUG] content from the response is valid as well")
+					updateDB(r.UserID, &CompleteStream{
+						ID:           op.ID,
+						Object:       op.Object,
+						Created:      op.Created,
+						Model:        op.Model,
+						FinishReason: "done",
+						Text:         tr,
+					})
+				}
+			}
+		}
+	}
+	return tr, err
+}
+
+func streamWithOpenAI(r *Request) {
 	defer close(r.Stream)
-	defer close(r.OneWord)
 	var resp *http.Response
 	openai := &OpenAIReq{
 		Model: model,
 		Messages: []*message{
-			{Role: "assistant", Content: fmt.Sprintf(promt, Languages[r.Lang])},
+			{Role: "assistant", Content: fmt.Sprintf(promtV1, Languages[r.Lang])},
 			{Role: "user", Content: r.Text}},
 		Stream:      true,
 		Temperature: 0.2,
@@ -421,7 +341,7 @@ func callOpenAI(r *Request) {
 	}
 }
 
-func Mainlogic(req *Request, ip string) {
+func handleFirstImpression(req *Request, ip string) {
 	if req.UserID == 0 || newUser(req.UserID) {
 		fmt.Printf("[DEBUG] user {%d} hasn't been found\n", req.UserID)
 		req.UserID = addUser(req.Lang, ip)
@@ -431,18 +351,21 @@ func Mainlogic(req *Request, ip string) {
 		increment(req.UserID)
 		fmt.Printf("[DEBUG] user's {%d} attempts have been incremented\n", req.UserID)
 	}
+}
+
+func OneWord(req *Request, ip string) (*TranslationResponse, error) {
+	handleFirstImpression(req, ip)
+	return getResponseWithOpenAI(req)
+}
+
+func Stream(req *Request, ip string) {
+	handleFirstImpression(req, ip)
 	isDefaultLanguage(req)
-	callOpenAI(req)
+	streamWithOpenAI(req)
 }
 
 func ChangeLanguage(req *Request, ip string) error {
-	if newUser(req.UserID) {
-		fmt.Printf("[DEBUG] user {%d} hasn't been found\n", req.UserID)
-		req.UserID = addUser(req.Lang, ip)
-		fmt.Printf("[DEBUG] user {%d} has been added\n", req.UserID)
-	} else {
-		fmt.Printf("[DEBUG] user {%d} has been found\n", req.UserID)
-	}
+	handleFirstImpression(req, ip)
 
 	_, err := Db.Exec("UPDATE Users SET language = $1, is_chosen = 1 WHERE id = $2", req.Lang, req.UserID)
 	if err != nil {

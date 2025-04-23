@@ -12,6 +12,80 @@ import (
 	app "github.com/iamissahar/AITranslate"
 )
 
+func approveRequest(ctx *gin.Context, withText bool) (*app.Request, bool) {
+	req := new(app.Request)
+	err := ctx.ShouldBindJSON(req)
+	if err != nil {
+		fmt.Println("[DEBUG] input data invalid. can't recognize the json data from request")
+		ctx.Header("Content-Type", "application/json")
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	} else {
+		if withText {
+			if req.Text == "" {
+				fmt.Println("[DEBUG] input data invalid. text has to be not empty")
+				ctx.Header("Content-Type", "application/json")
+				ctx.JSON(http.StatusBadRequest, gin.H{"error": "not enough parameters. text parameter is required"})
+				return nil, false
+			}
+		}
+
+		if _, ok := app.Languages[req.Lang]; !ok {
+			fmt.Println("[DEBUG] input data invalid. lang_code has to be in the variable Languages")
+			ctx.Header("Content-Type", "application/json")
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "not enough parameters. lang_code parameter is required"})
+		}
+	}
+	return req, err == nil
+}
+
+func oneWord(router *gin.Engine) {
+	router.POST("/translate/one_word", func(ctx *gin.Context) {
+		if req, ok := approveRequest(ctx, true); ok {
+
+			fmt.Println("[DEBUG] server has caught a request to translate one word")
+			ctx.Header("Content-Type", "application/json")
+
+			tr, err := app.OneWord(req, ctx.ClientIP())
+			if err == nil {
+				fmt.Println("[DEBUG] everything was OK. Server has got response from OpenAI and ready to send it to the client")
+				ctx.JSON(http.StatusOK, tr)
+			} else {
+				msg := err.Error()
+				fmt.Println("[DEBUG] got an error during the server's process: ", msg)
+				ctx.JSON(http.StatusBadRequest, gin.H{"description": "something went wrong on the server's side", "error": msg})
+			}
+		}
+	})
+}
+
+func stream(router *gin.Engine) {
+	router.POST("/translate/phrase", func(ctx *gin.Context) {
+		if req, ok := approveRequest(ctx, true); ok {
+
+			fmt.Println("[DEBUG] server's stream begins")
+			req.Stream = make(chan *app.Response)
+			go app.Stream(req, ctx.ClientIP())
+
+			ctx.Header("Content-Type", "text/event-stream")
+			ctx.Header("Cache-Control", "no-cache")
+			ctx.Header("Connection", "keep-alive")
+			ctx.Stream(func(w io.Writer) bool {
+				var (
+					peace *app.Response
+					ok    bool
+				)
+				if peace, ok = <-req.Stream; ok {
+					ctx.SSEvent("data", peace)
+				} else {
+					ctx.SSEvent("final_data", gin.H{"user_id": req.UserID, "final_text": req.FinalRes})
+					fmt.Println("[DEBUG] server's stream ends")
+				}
+				return ok
+			})
+		}
+	})
+}
+
 func changeTheLanguage(router *gin.Engine) {
 	router.PATCH("/change_language", func(ctx *gin.Context) {
 		var err error
@@ -35,59 +109,59 @@ func changeTheLanguage(router *gin.Engine) {
 	})
 }
 
-func stream(router *gin.Engine) {
-	router.POST("/translate", func(ctx *gin.Context) {
-		var (
-			err error
-			req = new(app.Request)
-		)
-		if err = ctx.ShouldBindJSON(req); err != nil {
-			fmt.Println("[DEBUG] input data invalid")
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
+// func stream(router *gin.Engine) {
+// 	router.POST("/translate", func(ctx *gin.Context) {
+// 		var (
+// 			err error
+// 			req = new(app.Request)
+// 		)
+// 		if err = ctx.ShouldBindJSON(req); err != nil {
+// 			fmt.Println("[DEBUG] input data invalid")
+// 			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+// 		}
 
-		if _, ok := app.Languages[req.Lang]; ok && req.Text != "" && err == nil {
-			fmt.Println("[DEBUG] server's stream begins")
-			req.Stream = make(chan *app.Response)
-			go app.Mainlogic(req, ctx.ClientIP())
+// 		if _, ok := app.Languages[req.Lang]; ok && req.Text != "" && err == nil {
+// 			fmt.Println("[DEBUG] server's stream begins")
+// 			req.Stream = make(chan *app.Response)
+// 			go app.Mainlogic(req, ctx.ClientIP())
 
-			ctx.Stream(func(w io.Writer) bool {
-				var (
-					peace *app.Response
-					js    *app.OneWordResponse
-					ok    bool
-				)
+// 			ctx.Stream(func(w io.Writer) bool {
+// 				var (
+// 					peace *app.Response
+// 					js    *app.OneWordResponse
+// 					ok    bool
+// 				)
 
-				go func() {
-					ctx.Header("Content-Type", "text/event-stream")
-					ctx.Header("Cache-Control", "no-cache")
-					ctx.Header("Connection", "keep-alive")
-					if peace, ok = <-req.Stream; ok {
-						ctx.SSEvent("data", peace)
-					} else {
-						if req.FinalRes != nil && *(req).FinalRes != "" {
-							ctx.SSEvent("final_data", gin.H{"user_id": req.UserID, "final_text": req.FinalRes})
-							fmt.Println("[DEBUG] server's stream ends")
-						}
-					}
-				}()
+// 				go func() {
+// 					ctx.Header("Content-Type", "text/event-stream")
+// 					ctx.Header("Cache-Control", "no-cache")
+// 					ctx.Header("Connection", "keep-alive")
+// 					if peace, ok = <-req.Stream; ok {
+// 						ctx.SSEvent("data", peace)
+// 					} else {
+// 						if req.FinalRes != nil && *(req).FinalRes != "" {
+// 							ctx.SSEvent("final_data", gin.H{"user_id": req.UserID, "final_text": req.FinalRes})
+// 							fmt.Println("[DEBUG] server's stream ends")
+// 						}
+// 					}
+// 				}()
 
-				func() {
-					ctx.Header("Content-Type", "application/json")
-					if js, ok = <-req.OneWord; ok {
-						ctx.JSON(http.StatusOK, js)
-					}
-				}()
+// 				func() {
+// 					ctx.Header("Content-Type", "application/json")
+// 					if js, ok = <-req.OneWord; ok {
+// 						ctx.JSON(http.StatusOK, js)
+// 					}
+// 				}()
 
-				return ok
-			})
+// 				return ok
+// 			})
 
-		} else if err == nil {
-			fmt.Println("[DEBUG] input data invalid. lang_code has to be in the variable Languages. Text has to be not empty")
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "not enough parameters. has to be language code, text and user id"})
-		}
-	})
-}
+// 		} else if err == nil {
+// 			fmt.Println("[DEBUG] input data invalid. lang_code has to be in the variable Languages. Text has to be not empty")
+// 			ctx.JSON(http.StatusBadRequest, gin.H{"error": "not enough parameters. has to be language code, text and user id"})
+// 		}
+// 	})
+// }
 
 func startAPI() {
 	router := gin.Default()
@@ -104,6 +178,7 @@ func startAPI() {
 	}))
 	stream(router)
 	changeTheLanguage(router)
+	oneWord(router)
 	err := router.RunTLS(":443", "/certs/fullchain.pem", "/certs/privkey.pem")
 	if err != nil {
 		panic(err)

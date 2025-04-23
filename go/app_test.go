@@ -154,7 +154,7 @@ func TestCallOpenAI(t *testing.T) {
 	}
 	s := ""
 	req.Stream = make(chan *Response)
-	go callOpenAI(req)
+	go streamWithOpenAI(req)
 	for resp := range req.Stream {
 		s += resp.Text
 	}
