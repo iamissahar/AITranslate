@@ -641,26 +641,32 @@ function visible() {
             <style>
                 @font-face {
                     font-family: 'Inter';
-                    src: url('${chrome.runtime.getURL("fonts/Inter-Regular.ttf")}') format('truetype');
+                    src: url('${chrome.runtime.getURL("fonts/inter/Inter_18pt-Regular.ttf")}') format('truetype');
                     font-weight: 400;
                     font-style: normal;
                 }
                 @font-face {
                     font-family: 'Inter';
-                    src: url('${chrome.runtime.getURL("fonts/Inter-SemiBold.ttf")}') format('truetype');
+                    src: url('${chrome.runtime.getURL("fonts/inter/Inter_18pt-SemiBold.ttf")}') format('truetype');
                     font-weight: 600;
                     font-style: normal;
                 }
                 @font-face {
                     font-family: 'Inter';
-                    src: url('${chrome.runtime.getURL("fonts/Inter-Bold.ttf")}') format('truetype');
+                    src: url('${chrome.runtime.getURL("fonts/inter/Inter_18pt-Bold.ttf")}') format('truetype');
                     font-weight: 700;
                     font-style: normal;
                 }
                 @font-face {
                     font-family: 'Inter';
-                    src: url('${chrome.runtime.getURL("fonts/Inter-Black.ttf")}') format('truetype');
+                    src: url('${chrome.runtime.getURL("fonts/inter/Inter_18pt-Black.ttf")}') format('truetype');
                     font-weight: 900;
+                    font-style: normal;
+                }
+                @font-face {
+                    font-family: 'Inter';
+                    src: url('${chrome.runtime.getURL("fonts/inter/Inter_18pt-Italic.ttf")}') format('truetype');
+                    font-weight: 400;
                     font-style: normal;
                 }
 
@@ -835,7 +841,7 @@ function visible() {
 
                 .meaning {
                     font-family: 'Inter', sans-serif;
-                    font-style: italic
+                    font-style: italic;
                     font-size: 16px;
                     line-height: 1.5;
                 }

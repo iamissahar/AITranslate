@@ -17,17 +17,17 @@ Return only valid JSON using these strict rules:
 
 If the input is a single word or a short phrase with insufficient context:
 - Identify at least one and up to five of the most common meanings.
-- Each meaning must include: context, translation, and an example — all in the %s language.
-- Also include the part of speech in the %s language. If it’s a short phrase, use "phrase" (also translated into the %s language).
+- Each meaning must include: part of speech, context, translation, and an example — all in the %s language.
+- If it's a short phrase, use "phrase" as a part of speech (also translated into the %s language).
 
 Return JSON in the following format:
 {
-  "part_of_speech": "<e.g., noun/adjective/verb/... in the %s language>",
+  "part_of_speech": "<e.g., noun/adjective/verb/...>",
   "meanings": [
     {
-      "context": "<short context in the %s language>",
-      "translation": "<translated meaning in the %s language>",
-      "example": "<example sentence in the %s language>"
+      "context": "<short context>",
+      "translation": "<translated meaning>",
+      "example": "<example sentence>"
     },
     ...
   ]
