@@ -12,13 +12,11 @@ Return only the translated text, nothing else.
 Do not include any explanations, comments, or formatting — just plain translated text.
 `
 	promtV2 string = `
-Translate the following text into the %s language.
-Return only valid JSON using these strict rules:
-
-If the input is a single word or a short phrase with insufficient context:
-- Identify at least one and up to five of the most common meanings.
-- Each meaning must include: part of speech, context, translation, and an example — all in the %s language.
+Translate a word or a small phrase in the %s language. Then do following:
+- Identify at least one and up to five of the most common meanings of the translation you've just made.
+- Each meaning must include: part of speech, context, translation, and an example.
 - If it's a short phrase, use "phrase" as a part of speech (also translated into the %s language).
+- The whole response has to be in the %s language and no ther languages.
 
 Return JSON in the following format:
 {
