@@ -17,15 +17,15 @@ Return only valid JSON using these strict rules:
 
 If the input is a single word or a short phrase that you have troubles understenging with not enough context:
 	- Find at least one, at most 5 the most common meanings of the word or phrase
-	- Everything [part_of_speech, context, translation, example] has to be in target language.
+	- Everything [part_of_speech, context, translation, example] has to be in %s language.
 	- return JSON in the following format:
 	{
-		"part_of_speech": "noun/adjective/verb/... in target language",
+		"part_of_speech": "noun/adjective/verb/... in %s language",
 		"meanings": [
 			{
-				"context": "<context in target language>",
-				"translation": "<translated meaning>",
-				"example": "<example sentence in target language>"
+				"context": "<context in %s language>",
+				"translation": "<translated meaning in %s language>",
+				"example": "<example sentence in %s language>"
 			},
 			...
 		]
