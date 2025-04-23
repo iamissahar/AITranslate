@@ -8,30 +8,31 @@ import (
 const (
 	promtV1 string = `
 Translate the following text into %s [target language].
-Return only text using these strict rules:
-If the input is a full sentence or phrase with clear context, just translate without anything but text.
+Return only the translated text, nothing else.
+Do not include any explanations, comments, or formatting — just plain translated text.
 `
 	promtV2 string = `
 Translate the following text into %s [target language].
 Return only valid JSON using these strict rules:
 
-If the input is a single word or a short phrase that you have troubles understenging with not enough context:
-	- Find at least one, at most 5 the most common meanings of the word or phrase
-	- Everything [part_of_speech, context, translation, example] has to be in %s language.
-	- return JSON in the following format:
-	{
-		"part_of_speech": "noun/adjective/verb/... in %s language",
-		"meanings": [
-			{
-				"context": "<context in %s language>",
-				"translation": "<translated meaning in %s language>",
-				"example": "<example sentence in %s language>"
-			},
-			...
-		]
-	}
-	
-	`
+If the input is a single word or a short phrase with insufficient context:
+- Identify at least one and up to five of the most common meanings.
+- Each meaning must include: context, translation, and an example — all in %s.
+- Also include the part of speech in %s. If it’s a short phrase, use "phrase" (also translated into %s).
+
+Return JSON in the following format:
+{
+  "part_of_speech": "<e.g., noun/adjective/verb/... in %s>",
+  "meanings": [
+    {
+      "context": "<short context in %s>",
+      "translation": "<translated meaning in %s>",
+      "example": "<example sentence in %s>"
+    },
+    ...
+  ]
+}`
+
 	url          string = "https://api.openai.com/v1/chat/completions"
 	model        string = "gpt-3.5-turbo"
 	response     string = "response"

@@ -14,97 +14,78 @@ chrome.contextMenus.onClicked.addListener(function(info, tab) {
   }
 });
 
-async function request(json) {
+async function oneWord(json, port) {
   try {
-    console.log("Sending request:", json);
-    const res = await fetch("https://nathanissahar.me/change_language", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(json),
-    });
-    console.log("gotten result, starts reading")
-    const data = await res.json();
-    return { ok: res.ok, data: data };
-  } catch (err) {
-    console.error("Request failed:", err);
-    return { ok: false, error: err.toString() };
-  }
-}
-
-async function stream(json) {
-  try {
-    const response = await fetch("https://nathanissahar.me/translate", {
+    const response = await fetch("https://nathanissahar.me/translate/one_word", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: json,
     })
-    const type = response.headers.get("Content-Type") || "";
-    return {content_type: type, resp: response}
-  } catch(err) {
-    return err
+    const data = await response.json();
+    port.postMessage({ ok: response.ok, data: data });
+  } catch (err) {
+    port.postMessage({ error: err.toString() });
   }
 }
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.path === "change_language") {
+async function request(json, port) {
+  try {
+    const response = await fetch("https://nathanissahar.me/change_language", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: json,
+    })
+    const data = await response.json();
+    port.postMessage({ ok: response.ok, data: data });
+  } catch (err) {
+    port.postMessage({ error: err.toString() });
+  }
+}
 
-    const jsonData = typeof message.json === 'string' ? JSON.parse(message.json) : message.json;
-    
-    request(jsonData).then(response => {
-      sendResponse(response);
+async function stream(json, port) {
+  try {
+    const response = await fetch("https://nathanissahar.me/translate/phrase", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: json,
     });
 
-    return true;
+    if (!response.ok || !response.body) {
+      port.postMessage({ error: "Failed to connect or no response body." });
+      return;
+    }
 
-  } else if (message.path === "translate") {
+    const reader = response.body.getReader();
 
-    stream(message.json).then((response) => {
-      sendResponse(response)
-      
-    }).catch((err) => {
-      sendResponse(err)
-    })
+    while (true) {
+      const { done, value } = await reader.read();
 
-    return true
+      if (done) {
+        port.postMessage({ done: true });
+        break;
+      }
+
+      port.postMessage({ chunk: Array.from(value) });
+    }
+
+  } catch (err) {
+    port.postMessage({ error: err.toString() });
   }
-});
+}
+
 
 chrome.runtime.onConnect.addListener((port) => {
-  if (port.name == "stream_data") {
-    console.log("conntects")
-    port.onMessage.addListener(async (message) => {
-      try {
-        console.log("requests servers")
-        const response = await fetch("https://nathanissahar.me/translate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(message),
-          });
-
-        console.log("gets response")
-        if (!response.ok || !response.body) {
-            console.log("the response is error")
-            const errorBody = await response.json()
-            port.postMessage({ error: `Bad response: ${errorBody}` });
-            port.postMessage({ done: true });
-            return;
-        }
-
-        const reader = response.body.getReader();
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            port.postMessage({ chunk: Array.from(value) });
-        }
-
-        console.log("stream ends well")
-        port.postMessage({ done: true });
-
-      } catch (err) {
-          console.log("catchs error")
-          port.postMessage({ error: err.message });
-          port.postMessage({ done: true });
-      }
+  if (port.name === "stream_data") {
+    port.onMessage.addListener((msg) => {
+      stream(JSON.stringify(msg), port);
+    });
+  } else if (port.name === "change_language") {
+    port.onMessage.addListener((msg) => {
+      request(JSON.stringify(msg), port);
+    })
+  } else if (port.name === "one_word") {
+    port.onMessage.addListener((msg) => {
+      oneWord(JSON.stringify(msg), port);
     })
   }
-})
+});

@@ -174,7 +174,7 @@ function regularTextChange(text) {
 function clearAll() {
     return new Promise((resolve) => {
         divText.textContent = ""
-        content.innerHTML = ""
+        textNod.remove()
 
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
@@ -204,14 +204,14 @@ function stopLoadingAnimation() {
     i = 0
 }
 
-function firstStep() {
+function firstStep(id) {
     if (process) {
         console.log("got first data from a stream")
         process = false;
-        chrome.storage.local.set({ user_id: parsed.user_id })
+        chrome.storage.local.set({ user_id: id })
         clearAll().then(() => {
             turnOffAnimationAndCleanText().then(() => {
-                stopLoadingAnimation();
+                stopLoadingAnimation()
                 console.log("cleaned inner htmls & turned off text animation")
             });
         })
@@ -219,7 +219,7 @@ function firstStep() {
 }
 
 async function streamResponseHandler(buffer, decoder, value) {
-    var eventType, data, obj, objhidden;
+    var eventType, data
     buffer.value += decoder.decode(value, { stream: true });
     const parts = buffer.value.split("\n\n");
     buffer.value = parts.pop();
@@ -240,7 +240,7 @@ async function streamResponseHandler(buffer, decoder, value) {
         try {
             const parsed = JSON.parse(data);
             if (data) {
-                firstStep()
+                firstStep(parsed.user_id)
             } 
             
             if (eventType === "data") {
@@ -262,7 +262,9 @@ async function streamResponseHandler(buffer, decoder, value) {
 function insertOneWordStructure(oneWord) {
     return new Promise((resolve) => {
         var indx = 0
-
+        console.log("oneWord = ", oneWord)
+        console.log("oneWord.part_of_speech = ", oneWord.part_of_speech)
+        console.log("oneWord.meanings = ", oneWord.meanings)
         for (var j = 0; j < isBusy.length; j++) {
             if (!isBusy[j] && indx < oneWord.meanings.length) {
                 const meaning = oneWord.meanings[indx]
@@ -286,17 +288,21 @@ function insertOneWordStructure(oneWord) {
     });
 }
 
-async function jsonResponseHandler(response) {
-    const parsed = JSON.parse(response)
-    if (parsed) {
-        firstStep()
-        chrome.storage.local.set({ user_id: parsed.user_id })
-        await insertOneWordStructure(parsed.one_word)
-    }
+async function jsonResponseHandler(msg) {
+    return new Promise((resolve) => {
+        firstStep(msg.user_id)
+        insertOneWordStructure(msg.content)
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                resolve()
+            });
+        });
+
+    })
 }
 
-async function streamTranslation(text) {
-    console.log("starting streaming")
+async function goStream(text) {
     const port = chrome.runtime.connect({ name: "stream_data" });
     const userID = await new Promise((resolve) => {
                 chrome.storage.local.get(["user_id"], (result) => {
@@ -317,26 +323,68 @@ async function streamTranslation(text) {
         text: text,
     });
 
-    port.onMessage.addListener((response) => {
-        if (response.content_type === "application/json") {
-            jsonResponseHandler(response.resp)
-        } else if (response.content_type === "text/event-stream") {
-            var msg = response.resp
-            if (msg.done) {
-                console.log("stream ends")
-                copyBtn.style.display = "flex"
-            } else if (msg.error) {
-                console.log("got an error")
-            } else if (msg.chunk) {
-                const uint8array = new Uint8Array(msg.chunk)
-                streamResponseHandler(buffer, decoder, uint8array)
-            } 
+    port.onMessage.addListener((msg) => {
+        if (msg.done) {
+            console.log("stream ends")
+            copyBtn.style.display = "flex"
+            port.disconnect();
+        } else if (msg.error) {
+            console.log("got an error")
+            port.disconnect();
+        } else if (msg.chunk) {
+            const uint8array = new Uint8Array(msg.chunk)
+            streamResponseHandler(buffer, decoder, uint8array)
         }
     })
+}
 
-    // port.onDisconnect.addListener(() => {
-    //     console.log("Port disconnected");
-    // });
+async function goRequest(text) {
+    const port = chrome.runtime.connect({ name: "one_word" });
+    const userID = await new Promise((resolve) => {
+                chrome.storage.local.get(["user_id"], (result) => {
+                    resolve(Number(result.user_id) || 0);
+                });
+            });
+    const language = await new Promise((resolve) => {
+                chrome.storage.local.get(["new_language"], (result) => {
+                    resolve(result.new_language || navigator.language.slice(0, 2));
+                });
+            });
+
+    console.log("prepared data to send")
+    port.postMessage({
+        user_id: userID,
+        lang_code: language,
+        text: text,
+    })
+
+    console.log("prepared to be listening")
+    port.onMessage.addListener((msg) => {
+        console.log("got response")
+        console.log(msg)
+        if (msg) {
+            chrome.storage.local.set({ user_id: msg.user_id })
+            jsonResponseHandler(msg.data).then(() => {
+                copyBtn.style.display = "flex"
+                port.disconnect();
+            })
+        } else if (msg.error) {
+            console.log("got an error")
+            port.disconnect();
+        } 
+    })
+}
+
+async function translation(text) {
+    const amount = text.trim().split(/\s+/).length;
+    
+    if (amount > 4) {
+        console.log("starting streaming")
+        await goStream(text)
+    } else {
+        console.log("starting requesting")
+        await goRequest(text)
+    }
 }
 
 function startLoadingAnimation() {
@@ -434,7 +482,7 @@ function theBeginingOfTheLogic() {
             if (canShow(selection)) {
                 showTranslationPopup(selection, processText);
                 console.log("showed popup")
-                streamTranslation(selectedText);
+                translation(selectedText);
             }
         })
     }
@@ -815,45 +863,47 @@ function visible() {
                         Translating
                     </div>
                     <div class="phrase" id="phrase"></div>
-                    <div class="a-word" id="a_word_1">
-                        <span class="pos" id="header_1"></span>
-                        <p>
-                            <div class="bold-title" id="bold_title_1"></div>
-                            <div class="translated-word" id="translated_word_1"></div>
-                            <div class="meaning" id="meaning_1"></div>
-                        </p>
-                    </div>
-                    <div class="a-word" id="a_word_2">
-                        <span class="pos" id="header_2"></span>
-                        <p>
-                            <div class="bold-title" id="bold_title_2"></div>
-                            <div class="translated-word" id="translated_word_2"></div>
-                            <div class="meaning" id="meaning_2"></div>
-                        </p>
-                    </div>
-                    <div class="a-word" id="a_word_3">
-                        <span class="pos" id="header_3"></span>
-                        <p>
-                            <div class="bold-title" id="bold_title_3"></div>
-                            <div class="translated-word" id="translated_word_3"></div>
-                            <div class="meaning" id="meaning_3"></div>
-                        </p>
-                    </div>
-                    <div class="a-word" id="a_word_4">
-                        <span class="pos" id="header_4"></span>
-                        <p>
-                            <div class="bold-title" id="bold_title_4"></div>
-                            <div class="translated-word" id="translated_word_4"></div>
-                            <div class="meaning" id="meaning_4"></div>
-                        </p>
-                    </div>
-                    <div class="a-word" id="a_word_5">
-                        <span class="pos" id="header_5"></span>
-                        <p>
-                            <div class="bold-title" id="bold_title_5"></div>
-                            <div class="translated-word" id="translated_word_5"></div>
-                            <div class="meaning" id="meaning_5"></div>
-                        </p>
+                    <div id="a_word_holder">
+                        <div class="a-word" id="a_word_1">
+                            <span class="pos" id="header_1"></span>
+                            <p>
+                                <div class="bold-title" id="bold_title_1"></div>
+                                <div class="translated-word" id="translated_word_1"></div>
+                                <div class="meaning" id="meaning_1"></div>
+                            </p>
+                        </div>
+                        <div class="a-word" id="a_word_2">
+                            <span class="pos" id="header_2"></span>
+                            <p>
+                                <div class="bold-title" id="bold_title_2"></div>
+                                <div class="translated-word" id="translated_word_2"></div>
+                                <div class="meaning" id="meaning_2"></div>
+                            </p>
+                        </div>
+                        <div class="a-word" id="a_word_3">
+                            <span class="pos" id="header_3"></span>
+                            <p>
+                                <div class="bold-title" id="bold_title_3"></div>
+                                <div class="translated-word" id="translated_word_3"></div>
+                                <div class="meaning" id="meaning_3"></div>
+                            </p>
+                        </div>
+                        <div class="a-word" id="a_word_4">
+                            <span class="pos" id="header_4"></span>
+                            <p>
+                                <div class="bold-title" id="bold_title_4"></div>
+                                <div class="translated-word" id="translated_word_4"></div>
+                                <div class="meaning" id="meaning_4"></div>
+                            </p>
+                        </div>
+                        <div class="a-word" id="a_word_5">
+                            <span class="pos" id="header_5"></span>
+                            <p>
+                                <div class="bold-title" id="bold_title_5"></div>
+                                <div class="translated-word" id="translated_word_5"></div>
+                                <div class="meaning" id="meaning_5"></div>
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>`;
@@ -880,7 +930,7 @@ function dataIntoLets(hidden, visible) {
     checkmark = visible.getElementById('checkmark_logo')
     textBtn = visible.getElementById('btn_text')
     div = hidden.getElementById('hidden_holder');
-    textNod = content.childNodes[2];
+    textNod = visible.getElementById('status_message')
     console.log("content.childNodes: ", content.childNodes, "textNod.nodeType = ",textNod.nodeType, Node.TEXT_NODE)
     divText = hidden.getElementById('hidden_text_container')
     copyBtn = visible.getElementById('copy_btn')

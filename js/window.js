@@ -89,25 +89,27 @@ async function sendRequest2(status) {
             resolve(Number(result.user_id) || 0)
         })
     })
-    chrome.runtime.sendMessage({
-        path: "change_language",
-        json: {
-            user_id: userID,
-            lang_code: selectedLanguage,
-        }
-    }, (response) => {
-        if (response.ok) {
+    const port = chrome.runtime.connect({ name: "change_language" })
+    port.postMessage({
+        user_id: userID,
+        lang_code: selectedLanguage,
+    })
+
+    port.onMessage.addListener((msg) => {
+        if (msg.ok) {
             status.innerText = "Success!";
-            const body = response.data;
+            const body = msg.data;
             chrome.storage.local.set({
                 new_language: selectedLanguage,
                 user_id: body.user_id
             })
+            port.disconnect();
         } else {
             status.innerText = "Oops! Something went wrong!";
-            console.error(response.error);
+            console.error(msg.error);
+            port.disconnect();
         }
-    });
+    })
 }
 
 

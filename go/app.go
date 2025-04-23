@@ -271,7 +271,7 @@ func getResponseWithOpenAI(r *Request) (*TranslationResponse, error) {
 	openai := &OpenAIReq{
 		Model: model,
 		Messages: []*message{
-			{Role: "assistant", Content: fmt.Sprintf(promtV2, l, l, l, l, l)},
+			{Role: "assistant", Content: fmt.Sprintf(promtV2, l, l, l, l, l, l, l)},
 			{Role: "user", Content: r.Text}},
 		Stream:      false,
 		Temperature: 0.2,
