@@ -12,22 +12,22 @@ Return only the translated text, nothing else.
 Do not include any explanations, comments, or formatting — just plain translated text.
 `
 	promtV2 string = `
-Translate the following text into %s [target language].
+Translate the following text into the %s language.
 Return only valid JSON using these strict rules:
 
 If the input is a single word or a short phrase with insufficient context:
 - Identify at least one and up to five of the most common meanings.
-- Each meaning must include: context, translation, and an example — all in %s.
-- Also include the part of speech in %s. If it’s a short phrase, use "phrase" (also translated into %s).
+- Each meaning must include: context, translation, and an example — all in the %s language.
+- Also include the part of speech in the %s language. If it’s a short phrase, use "phrase" (also translated into the %s language).
 
 Return JSON in the following format:
 {
-  "part_of_speech": "<e.g., noun/adjective/verb/... in %s>",
+  "part_of_speech": "<e.g., noun/adjective/verb/... in the %s language>",
   "meanings": [
     {
-      "context": "<short context in %s>",
-      "translation": "<translated meaning in %s>",
-      "example": "<example sentence in %s>"
+      "context": "<short context in the %s language>",
+      "translation": "<translated meaning in the %s language>",
+      "example": "<example sentence in the %s language>"
     },
     ...
   ]

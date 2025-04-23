@@ -27,10 +27,11 @@
     {
       "resources": [
         "icons/*", 
-        "fonts/Inter-Regular.ttf",
-        "fonts/Inter-SemiBold.ttf",
-        "fonts/Inter-Bold.ttf",
-        "fonts/Inter-Black.ttf"
+        "fonts/inter/Inter_18pt-Regular.ttf",
+        "fonts/inter/Inter_18pt-SemiBold.ttf",
+        "fonts/inter/Inter_18pt-Bold.ttf",
+        "fonts/inter/Inter_18pt-Black.ttf",
+        "fonts/inter/Inter_18pt-Italic.ttf"
       ],
       "matches": ["<all_urls>"]
     }
