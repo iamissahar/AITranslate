@@ -12,13 +12,12 @@ Return only the translated text, nothing else.
 Do not include any explanations, comments, or formatting — just plain translated text.
 `
 	promtV2 string = `
-Translate a word or a small phrase in the %s language. Then do following:
-- Identify at least one and up to five of the most common meanings of the translation you've just made.
-- Each meaning must include: part of speech, context, translation, and an example.
-- If it's a short phrase, use "phrase" as a part of speech (also translated into the %s language).
-- The whole response has to be in the %s language and no ther languages.
+A user gives you a word or a small phrase. You have to translate it to the %s language. 
+The whole answer has to be in %s language and no others.
+Also, identify at least one and up to five of the most common meanings of the translation you've just made.
+Each meaning must include: part of speech, context, translation, and an example.
 
-Return JSON in the following format:
+Return the answer in JSON format like following:
 {
   "part_of_speech": "<e.g., noun/adjective/verb/...>",
   "meanings": [

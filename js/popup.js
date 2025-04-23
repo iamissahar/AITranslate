@@ -1,10 +1,14 @@
 let onlyup, dotsInterval, wordsInterval, process
 let currentlineHeight = 10
 let stopgrowing = false
+let phraseProcess
 let i = 0
-let popup, content, errorImg, copyLogo, checkmark, textBtn, div, divText, copyBtn, textNod, closeBtn, isBusy
+let popup, content, errorImg, copyLogo, checkmark, textBtn, div, hiddenPhrase, copyBtn, textNod, closeBtn, isBusy
 let hiddenTagName, hiddenHost, visibleTagName, visibleHost
 let wordHolder = []
+let hiddenWordHolder = []
+let lineHolder = []
+let hiddenLineHolder = []
 const processText = ["Translating", "Getting data", "Data processing", "Completing"]
 const lineInPX = 19.2
 const popupWidth = 400
@@ -160,7 +164,7 @@ function addInnerText(obj, objhidden, text) {
 
 function regularTextChange(text) {
     return new Promise((resolve) => {
-        divText.textContent += text;
+        hiddenPhrase.textContent += text;
         content.innerHTML += text;
 
         requestAnimationFrame(() => {
@@ -173,7 +177,7 @@ function regularTextChange(text) {
 
 function clearAll() {
     return new Promise((resolve) => {
-        divText.textContent = ""
+        hiddenPhrase.textContent = ""
         textNod.remove()
 
         requestAnimationFrame(() => {
@@ -186,7 +190,7 @@ function clearAll() {
 
 function clearTheField() {
     return new Promise((resolve) => {
-        divText.textContent = ""
+        hiddenPhrase.textContent = ""
 
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
@@ -259,27 +263,85 @@ async function streamResponseHandler(buffer, decoder, value) {
     }
 }
 
-function insertOneWordStructure(oneWord) {
+function hiddenInsert(oneWord, meaning, j) {
     return new Promise((resolve) => {
-        var indx = 0
-        console.log("oneWord = ", oneWord)
-        console.log("oneWord.part_of_speech = ", oneWord.part_of_speech)
-        console.log("oneWord.meanings = ", oneWord.meanings)
-        for (var j = 0; j < isBusy.length; j++) {
-            if (!isBusy[j] && indx < oneWord.meanings.length) {
-                const meaning = oneWord.meanings[indx]
+        hiddenWordHolder[j].aWord.style.display = "block"
+        hiddenWordHolder[j].partOfSpeech.innerText = `[${oneWord.part_of_speech}]`
+        hiddenWordHolder[j].context.innerText = meaning.context
+        hiddenWordHolder[j].translation.innerText = meaning.translation
+        hiddenWordHolder[j].example.innerText = meaning.example
 
-                wordHolder[j].aWord.style.display = "block"
-                wordHolder[j].partOfSpeech.innerText = `[${oneWord.part_of_speech}]`
-                wordHolder[j].context.innerText = meaning.context
-                wordHolder[j].translation.innerText = meaning.translation
-                wordHolder[j].example.innerText = meaning.example
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                resolve()
+            });
+        });
+    })
+}
 
-                isBusy[j] = true
-                indx++
-            }
+function isRestructedNeeded() {
+    const rect = div.getBoundingClientRect()
+    if (rect.bottom > window.innerHeight) {
+        if (rect.height > window.innerHeight) {
+            return [0, window.innerHeight, true]
+        } else {
+            return [window.innerHeight - rect.height, window.innerHeight, true]
         }
+    } else {
+        return [0, 0, false]
+    }
+}
 
+function restructPopup(top, bottom) {
+    return new Promise((resolve) => {
+        popup.style.top = top
+        popup.style.bottom = bottom
+        popup.style.height = "100%"
+        
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                resolve()
+            });
+        });
+    })
+}
+
+function usualInsert(oneWord, meaning, indx, j) {
+    wordHolder[j].aWord.style.display = "block"
+    wordHolder[j].partOfSpeech.innerText = `[${oneWord.part_of_speech}]`
+    wordHolder[j].context.innerText = meaning.context
+    wordHolder[j].translation.innerText = meaning.translation
+    wordHolder[j].example.innerText = meaning.example
+
+    if (indx + 1 < oneWord.meanings.length) {
+        lineHolder[indx].style.display = "block"
+    }
+
+    isBusy[j] = true
+    return ++indx
+}
+
+async function insertOneWordStructure(oneWord) {
+    var indx = 0
+
+    for (var j = 0; j < isBusy.length; j++) {
+        if (!isBusy[j] && indx < oneWord.meanings.length) {
+            const meaning = oneWord.meanings[indx]
+
+            await hiddenInsert(oneWord, meaning, j)
+
+            const [top, bottom, ok] = isRestructedNeeded()
+            if (ok) {
+                await restructPopup(top, bottom)
+                await turnOnOverFlow()
+            }
+
+            indx = usualInsert(oneWord, meaning, indx, j)
+        }
+    }
+
+    return new Promise((resolve) => {
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 resolve()
@@ -303,6 +365,7 @@ async function jsonResponseHandler(msg) {
 }
 
 async function goStream(text) {
+    phraseProcess = true
     const port = chrome.runtime.connect({ name: "stream_data" });
     const userID = await new Promise((resolve) => {
                 chrome.storage.local.get(["user_id"], (result) => {
@@ -339,6 +402,7 @@ async function goStream(text) {
 }
 
 async function goRequest(text) {
+    phraseProcess = false
     const port = chrome.runtime.connect({ name: "one_word" });
     const userID = await new Promise((resolve) => {
                 chrome.storage.local.get(["user_id"], (result) => {
@@ -459,13 +523,13 @@ function canShow(selection) {
 function createTextHolder(text) {
     return new Promise((resolve) => {
         console.log("there's some text: ", text)
-        divText.textContent = text;
+        hiddenPhrase.textContent = text;
 
         requestAnimationFrame(() => {
             console.log(div)
             const height = div.offsetHeight;
-            divText.textContent = "";
-            observer.observe(divText);
+            hiddenPhrase.textContent = "";
+            observer.observe(hiddenPhrase);
             resolve(height);
         });
     });
@@ -609,13 +673,119 @@ function hidden() {
                 #hidden_title {
                     visibility: hidden;
                 }
+                
+                @keyframes shimmer {
+                    0% {
+                        background-position: -100% 0;
+                    }
+                    100% {
+                        background-position: 100% 0;
+                    }
+                }
+
+                .phrase {
+                    visibility: hidden;
+                    line-height: 1.5;
+                    font-family: 'Inter', sans-serif;
+                    font-size: 16px;
+                }
+
+                .a-word {
+                    visibility: hidden;
+                }
+
+                .pos {
+                    visibility: hidden;
+                    line-height: 1.5;
+                    font-family: 'Inter', sans-serif;
+                    font-size: 16px;
+                    font-weight: 400;
+                }
+
+                .bold-title {
+                    visibility: hidden;
+                    font-family: 'Inter', sans-serif;
+                    font-weight: 700;
+                    font-size: 18px;
+                    line-height: 1.5;
+                }
+
+                .translated-word {
+                    visibility: hidden;
+                    font-family: 'Inter', sans-serif;
+                    font-size: 16px;
+                    line-height: 1.5;
+                }
+
+                .meaning {
+                    visibility: hidden;
+                    font-family: 'Inter', sans-serif;
+                    font-style: italic;
+                    font-size: 16px;
+                    line-height: 1.5;
+                }
+
+                .a-line {
+                    visibility: hidden;
+                    height: 1px;
+                    background-color: #0d0d0d;
+                    width: 100%;
+                }
             </style>
             <div id="hidden_holder">
                 <div id="hidden_headers">
                     <img id="hidden_img" class="window-img" src=${windowImg}>
                     <span id="hidden_title" class="window-title">AI Translate</span>
                 </div>
-                <div id="hidden_text_container"></div>
+                <div id="hidden_text_container">
+                    <div class="phrase" id="hidden_phrase"></div>
+                    <div id="a_word_holder">
+                        <div class="a-word" id="a_word_1">
+                            <span class="pos" id="header_1"></span>
+                            <p>
+                                <div class="bold-title" id="bold_title_1"></div>
+                                <div class="translated-word" id="translated_word_1"></div>
+                                <div class="meaning" id="meaning_1"></div>
+                            </p>
+                        </div>
+                        <div class="a-line" id="a_line_1"></div>
+                        <div class="a-word" id="a_word_2">
+                            <span class="pos" id="header_2"></span>
+                            <p>
+                                <div class="bold-title" id="bold_title_2"></div>
+                                <div class="translated-word" id="translated_word_2"></div>
+                                <div class="meaning" id="meaning_2"></div>
+                            </p>
+                        </div>
+                        <div class="a-line" id="a_line_2"></div>
+                        <div class="a-word" id="a_word_3">
+                            <span class="pos" id="header_3"></span>
+                            <p>
+                                <div class="bold-title" id="bold_title_3"></div>
+                                <div class="translated-word" id="translated_word_3"></div>
+                                <div class="meaning" id="meaning_3"></div>
+                            </p>
+                        </div>
+                        <div class="a-line" id="a_line_3"></div>
+                        <div class="a-word" id="a_word_4">
+                            <span class="pos" id="header_4"></span>
+                            <p>
+                                <div class="bold-title" id="bold_title_4"></div>
+                                <div class="translated-word" id="translated_word_4"></div>
+                                <div class="meaning" id="meaning_4"></div>
+                            </p>
+                        </div>
+                        <div class="a-line" id="a_line_4"></div>
+                        <div class="a-word" id="a_word_5">
+                            <span class="pos" id="header_5"></span>
+                            <p>
+                                <div class="bold-title" id="bold_title_5"></div>
+                                <div class="translated-word" id="translated_word_5"></div>
+                                <div class="meaning" id="meaning_5"></div>
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
 
@@ -761,6 +931,8 @@ function visible() {
                 }
 
                 .window-content {
+                    font-family: 'Inter', sans-serif;
+                    font-size: 16px;
                     display: flex;
                     padding: 3% 4%;
                     word-wrap: break-word; 
@@ -799,6 +971,12 @@ function visible() {
                     margin-top: 2px;
                 }
 
+                .status-message {
+                    font-size: 16px;
+                    font-family: 'Inter', sans-serif;
+                    line-height: 1.5;
+                }
+
                 @keyframes shimmer {
                     0% {
                         background-position: -100% 0;
@@ -833,7 +1011,7 @@ function visible() {
                     line-height: 1.5;
                 }
 
-                .translated_word {
+                .translated-word {
                     font-family: 'Inter', sans-serif;
                     font-size: 16px;
                     line-height: 1.5;
@@ -844,6 +1022,13 @@ function visible() {
                     font-style: italic;
                     font-size: 16px;
                     line-height: 1.5;
+                }
+
+                .a-line {
+                    display: none;
+                    height: 1px;
+                    background-color: #0d0d0d;
+                    width: 100%;
                 }
             </style>
             <div id="translation_window" class="window">
@@ -878,6 +1063,7 @@ function visible() {
                                 <div class="meaning" id="meaning_1"></div>
                             </p>
                         </div>
+                        <div class="a-line" id="a_line_1"></div>
                         <div class="a-word" id="a_word_2">
                             <span class="pos" id="header_2"></span>
                             <p>
@@ -886,6 +1072,7 @@ function visible() {
                                 <div class="meaning" id="meaning_2"></div>
                             </p>
                         </div>
+                        <div class="a-line" id="a_line_2"></div>
                         <div class="a-word" id="a_word_3">
                             <span class="pos" id="header_3"></span>
                             <p>
@@ -894,6 +1081,7 @@ function visible() {
                                 <div class="meaning" id="meaning_3"></div>
                             </p>
                         </div>
+                        <div class="a-line" id="a_line_3"></div>
                         <div class="a-word" id="a_word_4">
                             <span class="pos" id="header_4"></span>
                             <p>
@@ -902,6 +1090,7 @@ function visible() {
                                 <div class="meaning" id="meaning_4"></div>
                             </p>
                         </div>
+                        <div class="a-line" id="a_line_4"></div>
                         <div class="a-word" id="a_word_5">
                             <span class="pos" id="header_5"></span>
                             <p>
@@ -938,17 +1127,28 @@ function dataIntoLets(hidden, visible) {
     div = hidden.getElementById('hidden_holder');
     textNod = visible.getElementById('status_message')
     console.log("content.childNodes: ", content.childNodes, "textNod.nodeType = ",textNod.nodeType, Node.TEXT_NODE)
-    divText = hidden.getElementById('hidden_text_container')
+    hiddenPhrase = hidden.getElementById('hidden_phrase')
     copyBtn = visible.getElementById('copy_btn')
     closeBtn = visible.getElementById('close_btn')
     isBusy = [false, false, false, false, false]
     for (let i = 1; i <= 5;i++) {
+        if (i < 5) {
+            lineHolder[i-1] = visible.getElementById(`a_line_${i}`)
+            hiddenLineHolder[i-1] = hidden.getElementById(`a_line_${i}`)
+        }
         wordHolder[i-1] = {
             aWord: visible.getElementById(`a_word_${i}`),
             partOfSpeech: visible.getElementById(`header_${i}`),
             context: visible.getElementById(`bold_title_${i}`),
             translation: visible.getElementById(`translated_word_${i}`),
             example: visible.getElementById(`meaning_${i}`),
+        }
+        hiddenWordHolder[i-1] = {
+            aWord: hidden.getElementById(`a_word_${i}`),
+            partOfSpeech: hidden.getElementById(`header_${i}`),
+            context: hidden.getElementById(`bold_title_${i}`),
+            translation: hidden.getElementById(`translated_word_${i}`),
+            example: hidden.getElementById(`meaning_${i}`),
         }
     }
     addListeners()
