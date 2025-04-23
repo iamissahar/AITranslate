@@ -208,10 +208,7 @@ func handleStream(line []byte, cs *CompleteStream, i, userID int, stream *chan *
 				}
 				for _, choice := range chunk.Choices {
 					if choice != nil && choice.Delta != nil && choice.Delta.Content != "" && choice.FinishReason == nil {
-						switch s := cs.Text.(type) {
-						case string:
-							s += choice.Delta.Content
-						}
+						cs.Text += choice.Delta.Content
 						rr := &Response{
 							UserID: userID,
 							Text:   choice.Delta.Content,
@@ -309,7 +306,7 @@ func getResponseWithOpenAI(r *Request) (*TranslationResponse, error) {
 						Created:      op.Created,
 						Model:        op.Model,
 						FinishReason: "done",
-						Text:         tr,
+						Text:         op.Choices[0].Message.Content,
 					})
 				}
 			}

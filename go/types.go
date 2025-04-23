@@ -16,7 +16,8 @@ Translate the following text into %s [target language].
 Return only valid JSON using these strict rules:
 
 If the input is a single word or a short phrase that you have troubles understenging with not enough context:
-	- Find at least one, at most 5 meaning of the word or phrase
+	- Find at least one, at most 5 the most common meanings of the word or phrase
+	- Everything [part_of_speech, context, translation, example] has to be in target language.
 	- return JSON in the following format:
 	{
 		"part_of_speech": "noun/adjective/verb/... in target language",
@@ -99,7 +100,7 @@ type CompleteStream struct {
 	Created      int64
 	Model        string
 	FinishReason string
-	Text         interface{}
+	Text         string
 }
 
 type choiceV1 struct {
