@@ -267,10 +267,11 @@ func getResponseWithOpenAI(r *Request) (*TranslationResponse, error) {
 		op   = new(OpenAI)
 		tr   = new(TranslationResponse)
 	)
+	l := Languages[r.Lang]
 	openai := &OpenAIReq{
 		Model: model,
 		Messages: []*message{
-			{Role: "assistant", Content: fmt.Sprintf(promtV2, Languages[r.Lang])},
+			{Role: "assistant", Content: fmt.Sprintf(promtV2, l, l, l, l, l)},
 			{Role: "user", Content: r.Text}},
 		Stream:      false,
 		Temperature: 0.2,
