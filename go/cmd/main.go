@@ -48,7 +48,7 @@ func oneWord(router *gin.Engine) {
 			tr, err := app.OneWord(req, ctx.ClientIP())
 			if err == nil {
 				fmt.Println("[DEBUG] everything was OK. Server has got response from OpenAI and ready to send it to the client")
-				ctx.JSON(http.StatusOK, tr)
+				ctx.JSON(http.StatusOK, gin.H{"user_id": req.UserID, "content": tr})
 			} else {
 				msg := err.Error()
 				fmt.Println("[DEBUG] got an error during the server's process: ", msg)
