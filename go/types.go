@@ -18,17 +18,7 @@ Also, identify at least one and up to five of the most common meanings of the tr
 Each meaning must include: part of speech, context, translation, and an example.
 
 Return the answer in JSON format like following:
-{
-  "part_of_speech": "<e.g., noun/adjective/verb/...>",
-  "meanings": [
-    {
-      "context": "<short context>",
-      "translation": "<translated meaning>",
-      "example": "<example sentence>"
-    },
-    ...
-  ]
-}`
+{"part_of_speech": "", "meanings": [{"context": "", "translation": "","example": ""}, ...]}`
 
 	url          string = "https://api.openai.com/v1/chat/completions"
 	model        string = "gpt-3.5-turbo"
