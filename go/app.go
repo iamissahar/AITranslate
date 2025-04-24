@@ -260,12 +260,11 @@ func isDefaultLanguage(req *Request) {
 	}
 }
 
-func getResponseWithOpenAI(r *Request) (*TranslationResponse, error) {
+func getResponseWithOpenAI(r *Request) (string, error) {
 	var (
 		resp *http.Response
 		bb   []byte
 		op   = new(OpenAI)
-		tr   = new(TranslationResponse)
 	)
 	l := Languages[r.Lang]
 	openai := &OpenAIReq{
@@ -295,25 +294,18 @@ func getResponseWithOpenAI(r *Request) (*TranslationResponse, error) {
 				errorHandler(r.UserID, 2, "getResponseWithOpenAI()", err)
 			} else {
 				fmt.Println("[DEBUG] the response is valid")
-				err = json.Unmarshal([]byte(op.Choices[0].Message.Content), tr)
-				if err != nil {
-					fmt.Println("[DEBUG] can't convert content data into go-stucture")
-					errorHandler(r.UserID, 3, "getResponseWithOpenAI()", err)
-				} else {
-					fmt.Println("[DEBUG] content from the response is valid as well")
-					updateDB(r.UserID, &CompleteStream{
-						ID:           op.ID,
-						Object:       op.Object,
-						Created:      op.Created,
-						Model:        op.Model,
-						FinishReason: "done",
-						Text:         op.Choices[0].Message.Content,
-					})
-				}
+				updateDB(r.UserID, &CompleteStream{
+					ID:           op.ID,
+					Object:       op.Object,
+					Created:      op.Created,
+					Model:        op.Model,
+					FinishReason: "done",
+					Text:         op.Choices[0].Message.Content,
+				})
 			}
 		}
 	}
-	return tr, err
+	return op.Choices[0].Message.Content, err
 }
 
 func streamWithOpenAI(r *Request) {
@@ -351,7 +343,7 @@ func handleFirstImpression(req *Request, ip string) {
 	}
 }
 
-func OneWord(req *Request, ip string) (*TranslationResponse, error) {
+func OneWord(req *Request, ip string) (string, error) {
 	handleFirstImpression(req, ip)
 	return getResponseWithOpenAI(req)
 }

@@ -280,16 +280,28 @@ function hiddenInsert(oneWord, meaning, j) {
 }
 
 function isRestructedNeeded() {
-    const rect = div.getBoundingClientRect()
-    if (rect.bottom > window.innerHeight) {
+    const rectV1 = div.getBoundingClientRect()
+    const rectV2 = popup.getBoundingClientRect()
+    if (rectV1.bottom > window.innerHeight) {
         if (rect.height > window.innerHeight) {
             return [0, window.innerHeight, true]
         } else {
-            return [window.innerHeight - rect.height, window.innerHeight, true]
+            return [window.innerHeight - rectV1.height, window.innerHeight, true]
         }
-    } else {
-        return [0, 0, false]
     }
+    if (rectV1.top < 0) {
+        if (rectV1.height > window) {
+            return [0, window.innerHeight, true]
+        } else {
+            return [rectV1.top, window.innerHeight - rectV1.height, true]
+        }
+    }
+    if (onlyup) {
+        if (rectV1.height > rectV2.height) {
+            return [rectV2.top - (rectV1.height - rectV2.height), rectV2.bottom, true]
+        }
+    }
+    return [0, 0, false]
 }
 
 function restructPopup(top, bottom) {
@@ -742,47 +754,37 @@ function hidden() {
                     <div id="a_word_holder">
                         <div class="a-word" id="a_word_1">
                             <span class="pos" id="header_1"></span>
-                            <p>
-                                <div class="bold-title" id="bold_title_1"></div>
-                                <div class="translated-word" id="translated_word_1"></div>
-                                <div class="meaning" id="meaning_1"></div>
-                            </p>
+                            <div class="bold-title" id="bold_title_1"></div>
+                            <div class="translated-word" id="translated_word_1"></div>
+                            <div class="meaning" id="meaning_1"></div>
                         </div>
                         <div class="a-line" id="a_line_1"></div>
                         <div class="a-word" id="a_word_2">
                             <span class="pos" id="header_2"></span>
-                            <p>
-                                <div class="bold-title" id="bold_title_2"></div>
-                                <div class="translated-word" id="translated_word_2"></div>
-                                <div class="meaning" id="meaning_2"></div>
-                            </p>
+                            <div class="bold-title" id="bold_title_2"></div>
+                            <div class="translated-word" id="translated_word_2"></div>
+                            <div class="meaning" id="meaning_2"></div>
                         </div>
                         <div class="a-line" id="a_line_2"></div>
                         <div class="a-word" id="a_word_3">
                             <span class="pos" id="header_3"></span>
-                            <p>
-                                <div class="bold-title" id="bold_title_3"></div>
-                                <div class="translated-word" id="translated_word_3"></div>
-                                <div class="meaning" id="meaning_3"></div>
-                            </p>
+                            <div class="bold-title" id="bold_title_3"></div>
+                            <div class="translated-word" id="translated_word_3"></div>
+                            <div class="meaning" id="meaning_3"></div>
                         </div>
                         <div class="a-line" id="a_line_3"></div>
                         <div class="a-word" id="a_word_4">
                             <span class="pos" id="header_4"></span>
-                            <p>
-                                <div class="bold-title" id="bold_title_4"></div>
-                                <div class="translated-word" id="translated_word_4"></div>
-                                <div class="meaning" id="meaning_4"></div>
-                            </p>
+                            <div class="bold-title" id="bold_title_4"></div>
+                            <div class="translated-word" id="translated_word_4"></div>
+                            <div class="meaning" id="meaning_4"></div>
                         </div>
                         <div class="a-line" id="a_line_4"></div>
                         <div class="a-word" id="a_word_5">
                             <span class="pos" id="header_5"></span>
-                            <p>
-                                <div class="bold-title" id="bold_title_5"></div>
-                                <div class="translated-word" id="translated_word_5"></div>
-                                <div class="meaning" id="meaning_5"></div>
-                            </p>
+                            <div class="bold-title" id="bold_title_5"></div>
+                            <div class="translated-word" id="translated_word_5"></div>
+                            <div class="meaning" id="meaning_5"></div>
                         </div>
                     </div>
                 </div>
@@ -1057,47 +1059,37 @@ function visible() {
                     <div id="a_word_holder">
                         <div class="a-word" id="a_word_1">
                             <span class="pos" id="header_1"></span>
-                            <p>
-                                <div class="bold-title" id="bold_title_1"></div>
-                                <div class="translated-word" id="translated_word_1"></div>
-                                <div class="meaning" id="meaning_1"></div>
-                            </p>
+                            <div class="bold-title" id="bold_title_1"></div>
+                            <div class="translated-word" id="translated_word_1"></div>
+                            <div class="meaning" id="meaning_1"></div>
                         </div>
                         <div class="a-line" id="a_line_1"></div>
                         <div class="a-word" id="a_word_2">
                             <span class="pos" id="header_2"></span>
-                            <p>
-                                <div class="bold-title" id="bold_title_2"></div>
-                                <div class="translated-word" id="translated_word_2"></div>
-                                <div class="meaning" id="meaning_2"></div>
-                            </p>
+                            <div class="bold-title" id="bold_title_2"></div>
+                            <div class="translated-word" id="translated_word_2"></div>
+                            <div class="meaning" id="meaning_2"></div>
                         </div>
                         <div class="a-line" id="a_line_2"></div>
                         <div class="a-word" id="a_word_3">
                             <span class="pos" id="header_3"></span>
-                            <p>
-                                <div class="bold-title" id="bold_title_3"></div>
-                                <div class="translated-word" id="translated_word_3"></div>
-                                <div class="meaning" id="meaning_3"></div>
-                            </p>
+                            <div class="bold-title" id="bold_title_3"></div>
+                            <div class="translated-word" id="translated_word_3"></div>
+                            <div class="meaning" id="meaning_3"></div>
                         </div>
                         <div class="a-line" id="a_line_3"></div>
                         <div class="a-word" id="a_word_4">
                             <span class="pos" id="header_4"></span>
-                            <p>
-                                <div class="bold-title" id="bold_title_4"></div>
-                                <div class="translated-word" id="translated_word_4"></div>
-                                <div class="meaning" id="meaning_4"></div>
-                            </p>
+                            <div class="bold-title" id="bold_title_4"></div>
+                            <div class="translated-word" id="translated_word_4"></div>
+                            <div class="meaning" id="meaning_4"></div>
                         </div>
                         <div class="a-line" id="a_line_4"></div>
                         <div class="a-word" id="a_word_5">
                             <span class="pos" id="header_5"></span>
-                            <p>
-                                <div class="bold-title" id="bold_title_5"></div>
-                                <div class="translated-word" id="translated_word_5"></div>
-                                <div class="meaning" id="meaning_5"></div>
-                            </p>
+                            <div class="bold-title" id="bold_title_5"></div>
+                            <div class="translated-word" id="translated_word_5"></div>
+                            <div class="meaning" id="meaning_5"></div>
                         </div>
                     </div>
                 </div>
