@@ -12,11 +12,15 @@ Return only the translated text, nothing else.
 Do not include any explanations, comments, or formatting — just plain translated text.
 `
 	promtV2 string = `
-You are given a word or a small phrase. You have to return a json exactly like this:
-	{"part_of_speech": "", "meanings": [{"context": "", "translation": "","example": ""}, ...]}
-All data in the json has to be in %s.
-You must translate the peace of text to %s, then identify at least one and up to five of the most common meanings.
-Each meaning must include: part of speech, context, translation, and an example, so to be suitable for the json format.`
+You must take the text from the user.
+You must provide at least once and up to five:
+	1. part of speech
+	2. context 
+	3. literal translation 
+	4. usage example in
+Everything must be in %s, everything must not be the same.
+You must put the data you got in JSON. You must return only valid JSON. Every json field must not be empty.
+The expected JSON format: {"part_of_speech": "", "meanings": [{"context": "", "translation": "","example": ""}, ...]}`
 
 	url          string = "https://api.openai.com/v1/chat/completions"
 	model        string = "gpt-3.5-turbo"
