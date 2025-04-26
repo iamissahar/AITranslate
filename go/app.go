@@ -262,12 +262,12 @@ func isDefaultLanguage(req *Request) {
 
 func getResponseWithOpenAI(r *Request) (string, error) {
 	var (
-		resp            *http.Response
-		body, bb        []byte
-		op              = new(OpenAI)
-		result, cleaned string
-		data            TranslationResponse
-		err             error
+		resp     *http.Response
+		body, bb []byte
+		op       = new(OpenAI)
+		result   string
+		data     TranslationResponse
+		err      error
 	)
 	l := Languages[r.Lang]
 	openai := &OpenAIReq{
@@ -297,26 +297,26 @@ func getResponseWithOpenAI(r *Request) (string, error) {
 				fmt.Println("[DEBUG] can't convert response data into a go-stucture")
 				errorHandler(r.UserID, 2, "getResponseWithOpenAI()", err)
 			} else {
-				if err := json.Unmarshal([]byte(op.Choices[0].Message.Content), &cleaned); err != nil {
-					fmt.Println("[DEBUG] can't convert response data (content) into a string")
-					errorHandler(r.UserID, 3, "getResponseWithOpenAI()", err)
+				// if err := json.Unmarshal([]byte(op.Choices[0].Message.Content), &cleaned); err != nil {
+				// fmt.Println("[DEBUG] can't convert response data (content) into a string")
+				// errorHandler(r.UserID, 3, "getResponseWithOpenAI()", err)
+				// } else {
+				if err := json.Unmarshal([]byte(op.Choices[0].Message.Content), &data); err != nil {
+					fmt.Println("[DEBUG] can't convert a string response into a go-stucture")
+					errorHandler(r.UserID, 4, "getResponseWithOpenAI()", err)
 				} else {
-					if err := json.Unmarshal([]byte(cleaned), &data); err != nil {
-						fmt.Println("[DEBUG] can't convert a string response into a go-stucture")
-						errorHandler(r.UserID, 4, "getResponseWithOpenAI()", err)
-					} else {
-						fmt.Println("[DEBUG] the response is valid")
-						result = op.Choices[0].Message.Content
-						updateDB(r.UserID, &CompleteStream{
-							ID:           op.ID,
-							Object:       op.Object,
-							Created:      op.Created,
-							Model:        op.Model,
-							FinishReason: "done",
-							Text:         op.Choices[0].Message.Content,
-						})
-					}
+					fmt.Println("[DEBUG] the response is valid")
+					result = op.Choices[0].Message.Content
+					updateDB(r.UserID, &CompleteStream{
+						ID:           op.ID,
+						Object:       op.Object,
+						Created:      op.Created,
+						Model:        op.Model,
+						FinishReason: "done",
+						Text:         op.Choices[0].Message.Content,
+					})
 				}
+				// }
 			}
 		}
 	}
