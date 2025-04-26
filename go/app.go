@@ -262,9 +262,12 @@ func isDefaultLanguage(req *Request) {
 
 func getResponseWithOpenAI(r *Request) (string, error) {
 	var (
-		resp *http.Response
-		bb   []byte
-		op   = new(OpenAI)
+		resp            *http.Response
+		body, bb        []byte
+		op              = new(OpenAI)
+		result, cleaned string
+		data            TranslationResponse
+		err             error
 	)
 	l := Languages[r.Lang]
 	openai := &OpenAIReq{
@@ -275,7 +278,7 @@ func getResponseWithOpenAI(r *Request) (string, error) {
 		Stream:      false,
 		Temperature: 0.2,
 	}
-	body, err := json.Marshal(openai)
+	body, err = json.Marshal(openai)
 	if err != nil {
 		errorHandler(r.UserID, 0, "getResponseWithOpenAI()", err)
 	} else {
@@ -288,24 +291,36 @@ func getResponseWithOpenAI(r *Request) (string, error) {
 			errorHandler(r.UserID, 1, "getResponseWithOpenAI()", err)
 		} else {
 			fmt.Println("[DEBUG] got response from OpenAI")
+			fmt.Printf("[DEBUG] response data: %s\n", string(bb))
 			err = json.Unmarshal(bb, op)
 			if err != nil {
-				fmt.Println("[DEBUG] can't convert response data into go-stucture")
+				fmt.Println("[DEBUG] can't convert response data into a go-stucture")
 				errorHandler(r.UserID, 2, "getResponseWithOpenAI()", err)
 			} else {
-				fmt.Println("[DEBUG] the response is valid")
-				updateDB(r.UserID, &CompleteStream{
-					ID:           op.ID,
-					Object:       op.Object,
-					Created:      op.Created,
-					Model:        op.Model,
-					FinishReason: "done",
-					Text:         op.Choices[0].Message.Content,
-				})
+				if err := json.Unmarshal([]byte(op.Choices[0].Message.Content), &cleaned); err != nil {
+					fmt.Println("[DEBUG] can't convert response data (content) into a string")
+					errorHandler(r.UserID, 3, "getResponseWithOpenAI()", err)
+				} else {
+					if err := json.Unmarshal([]byte(cleaned), &data); err != nil {
+						fmt.Println("[DEBUG] can't convert a string response into a go-stucture")
+						errorHandler(r.UserID, 4, "getResponseWithOpenAI()", err)
+					} else {
+						fmt.Println("[DEBUG] the response is valid")
+						result = op.Choices[0].Message.Content
+						updateDB(r.UserID, &CompleteStream{
+							ID:           op.ID,
+							Object:       op.Object,
+							Created:      op.Created,
+							Model:        op.Model,
+							FinishReason: "done",
+							Text:         op.Choices[0].Message.Content,
+						})
+					}
+				}
 			}
 		}
 	}
-	return op.Choices[0].Message.Content, err
+	return result, err
 }
 
 func streamWithOpenAI(r *Request) {
