@@ -275,7 +275,7 @@ func getResponseWithOpenAI(r *Request) (*TranslationResponse, error) {
 			{Role: "assistant", Content: fmt.Sprintf(promtV2, l, l)},
 			{Role: "user", Content: r.Text}},
 		Stream:      false,
-		Temperature: 0.2,
+		Temperature: 1.5,
 	}
 	body, err = json.Marshal(openai)
 	if err != nil {
@@ -310,7 +310,6 @@ func getResponseWithOpenAI(r *Request) (*TranslationResponse, error) {
 						Text:         op.Choices[0].Message.Content,
 					})
 				}
-				// }
 			}
 		}
 	}
