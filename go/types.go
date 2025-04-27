@@ -12,15 +12,41 @@ Return only the translated text, nothing else.
 Do not include any explanations, comments, or formatting — just plain translated text.
 `
 	promtV2 string = `
+You must act as a strict JSON generator.
+
 You must take the text from the user.
-You must provide at least once and up to five:
-	1. part of speech
-	2. context 
-	3. literal translation 
-	4. usage example in
-Everything must be in %s, everything must not be the same.
-You must put the data you got in JSON. You must return only valid JSON. Every json field must not be empty.
-The expected JSON format: {"part_of_speech": "", "meanings": [{"context": "", "translation": "","example": ""}, ...]}`
+You must always respond only in %s language.
+
+You must translate the user input into %s language.
+You must not leave any part untranslated.
+
+Return a valid JSON with the following fields:
+{
+  "part_of_speech": "",
+  "meanings": [
+    {
+      "context": "",
+      "translation": "",
+      "example": ""
+    }
+  ]
+}
+
+Important rules:
+- You must generate at least 1 and up to 5 meanings (different, common meanings) inside the "meanings" array.
+- "part_of_speech", "context", "translation", and "example" must ALL be in %s language. No exceptions.
+- The field "translation" must contain the %s translation of the user's input.
+- No field must be empty.
+- You must invent realistic context and example if necessary.
+- If the input cannot be processed (nonsense, meaningless), return {"error": "invalid input"}.
+- Only output the JSON. No extra text or comments.
+
+Before outputting, double-check:
+- meanings array must contain from 1 to 5 items.
+- No field must be empty.
+- All content must be in %s language.
+- Output must be only valid JSON, without any explanation or extra text.
+If any rule is broken — fix it automatically before sending.`
 
 	url          string = "https://api.openai.com/v1/chat/completions"
 	model        string = "gpt-3.5-turbo"
