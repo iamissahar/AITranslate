@@ -16,6 +16,7 @@ const offset = 10
 const headersHeight = 25
 const defaultHeight = 55
 const fontSize = 16
+const linewidth = 367
 
 function changePopup(height, bottom, top) {
     return new Promise((resolve) => {
@@ -263,13 +264,18 @@ async function streamResponseHandler(buffer, decoder, value) {
     }
 }
 
-function hiddenInsert(oneWord, meaning, j) {
+function hiddenInsert(oneWord, meaning, j, showLine) {
     return new Promise((resolve) => {
         hiddenWordHolder[j].aWord.style.display = "block"
         hiddenWordHolder[j].partOfSpeech.innerText = `[${oneWord.part_of_speech}]`
         hiddenWordHolder[j].context.innerText = meaning.context
         hiddenWordHolder[j].translation.innerText = meaning.translation
         hiddenWordHolder[j].example.innerText = meaning.example
+
+        if (showLine) {
+            hiddenLineHolder[j].style.display = "block"
+            lineHolder[j].style.width = `${linewidth}px`
+        }
 
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
@@ -282,34 +288,39 @@ function hiddenInsert(oneWord, meaning, j) {
 function isRestructedNeeded() {
     const rectV1 = div.getBoundingClientRect()
     const rectV2 = popup.getBoundingClientRect()
-    if (rectV1.bottom > window.innerHeight) {
-        if (rect.height > window.innerHeight) {
-            return [0, window.innerHeight, true]
+    var result = [0, 0, 0, false, false]
+
+    if (rectV1.height >= window.innerHeight) {
+        // if new height doesn't fit display at all
+        result = [0, window.innerHeight, window.innerHeight, true, true]
+    } else if (!onlyup) {
+        if (rectV2.top + rectV1.height >= window.innerHeight) {
+            // if height is too much, and it doesn't fit in a display (bottom),
+            // I need to raise up popup.top, til the future popup.bottom
+            // fits in a display
+            result = [rectV2.top + rectV1.height - window.innerHeight, window.innerHeight, rectV1.height, true, false]
         } else {
-            return [window.innerHeight - rectV1.height, window.innerHeight, true]
+            result = [rectV2.top, rectV2.top + rectV1.height, rectV1.height, true, false]
         }
-    }
-    if (rectV1.top < 0) {
-        if (rectV1.height > window) {
-            return [0, window.innerHeight, true]
+    } else if (onlyup) {
+        if (rectV2.bottom - rectV1.height <= 0) {
+            // if height is too much, and it doesn't fit in a display (top),
+            // I need to reduce popup.bottom down, til the future popup.top
+            // fits in a display
+            result = [0, rectV1.height, rectV1.height, true, false]
         } else {
-            return [rectV1.top, window.innerHeight - rectV1.height, true]
+            result = [rectV2.bottom - rectV1.height, rectV2.bottom, rectV1.height, true, false]
         }
     }
-    if (onlyup) {
-        if (rectV1.height > rectV2.height) {
-            return [rectV2.top - (rectV1.height - rectV2.height), rectV2.bottom, true]
-        }
-    }
-    return [0, 0, false]
+
+    return result
 }
 
-function restructPopup(top, bottom) {
+function restructPopup(top, height, bottom) {
     return new Promise((resolve) => {
-        popup.style.top = top
-        popup.style.bottom = bottom
-        popup.style.height = "100%"
-        
+        popup.style.top = `${top}px`
+        popup.style.bottom = `${bottom}px`
+        popup.style.height = `${height}px`
 
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
@@ -328,10 +339,19 @@ function usualInsert(oneWord, meaning, indx, j) {
 
     if (indx + 1 < oneWord.meanings.length) {
         lineHolder[indx].style.display = "block"
+        lineHolder[indx].style.width = `${linewidth}px`
     }
 
     isBusy[j] = true
-    return ++indx
+    ++indx
+
+    return new Promise((resolve) => {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                resolve(indx)
+            });
+        });
+    })
 }
 
 async function insertOneWordStructure(oneWord) {
@@ -341,15 +361,17 @@ async function insertOneWordStructure(oneWord) {
         if (!isBusy[j] && indx < oneWord.meanings.length) {
             const meaning = oneWord.meanings[indx]
 
-            await hiddenInsert(oneWord, meaning, j)
+            await hiddenInsert(oneWord, meaning, j, indx + 1 < oneWord.meanings.length)
 
-            const [top, bottom, ok] = isRestructedNeeded()
+            const [top, bottom, height, ok, overflow] = isRestructedNeeded()
             if (ok) {
-                await restructPopup(top, bottom)
-                await turnOnOverFlow()
+                await restructPopup(top, height, bottom)
+                if (overflow) {
+                    await turnOnOverFlow()
+                }
             }
 
-            indx = usualInsert(oneWord, meaning, indx, j)
+            indx = await usualInsert(oneWord, meaning, indx, j)
         }
     }
 
@@ -703,6 +725,7 @@ function hidden() {
                 }
 
                 .a-word {
+                    display: none;
                     visibility: hidden;
                 }
 
@@ -741,6 +764,7 @@ function hidden() {
                 }
 
                 .a-line {
+                    display: none;
                     visibility: hidden;
                     height: 1px;
                     background-color: #0d0d0d;

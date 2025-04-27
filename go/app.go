@@ -260,6 +260,31 @@ func isDefaultLanguage(req *Request) {
 	}
 }
 
+func isResponseValid(tr *TranslationResponse, r *Request) (bool, error) {
+	var found bool
+	var err error
+	if tr.PartOfSpeech == "" {
+
+	}
+	if tr.Meanings == nil {
+
+	} else {
+		if len(tr.Meanings) >= 1 && len(tr.Meanings) <= 5 {
+			for i := 0; i < len(tr.Meanings) && !found; i++ {
+				m := tr.Meanings[i]
+				if m.Context == "" || m.Example == "" || m.Translation == "" {
+					found = true
+				}
+			}
+
+			if found {
+				tr, err = getResponseWithOpenAI(r)
+			}
+		}
+	}
+	return found == false, err
+}
+
 func getResponseWithOpenAI(r *Request) (*TranslationResponse, error) {
 	var (
 		resp     *http.Response
@@ -267,6 +292,7 @@ func getResponseWithOpenAI(r *Request) (*TranslationResponse, error) {
 		op       = new(OpenAI)
 		data     TranslationResponse
 		err      error
+		ok       bool
 	)
 	l := Languages[r.Lang]
 	openai := &OpenAIReq{
@@ -301,14 +327,22 @@ func getResponseWithOpenAI(r *Request) (*TranslationResponse, error) {
 					errorHandler(r.UserID, 4, "getResponseWithOpenAI()", err)
 				} else {
 					fmt.Println("[DEBUG] the response is valid")
-					updateDB(r.UserID, &CompleteStream{
-						ID:           op.ID,
-						Object:       op.Object,
-						Created:      op.Created,
-						Model:        op.Model,
-						FinishReason: "done",
-						Text:         op.Choices[0].Message.Content,
-					})
+					ok, err = isResponseValid(&data, r)
+					if err != nil {
+						errorHandler(r.UserID, 5, "getResponseWithOpenAI()", err)
+					}
+
+					if ok {
+
+						updateDB(r.UserID, &CompleteStream{
+							ID:           op.ID,
+							Object:       op.Object,
+							Created:      op.Created,
+							Model:        op.Model,
+							FinishReason: "done",
+							Text:         op.Choices[0].Message.Content,
+						})
+					}
 				}
 			}
 		}
