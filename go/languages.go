@@ -12,7 +12,7 @@ var Languages = map[string][]string{
 	"hy": {"Հայերեն", Gpt4},
 	"bn": {"বাংলা", Gpt4},
 	"bs": {"Bosanski", Gpt3_5},
-	"bg": {"Български", Gpt3_5},
+	"bg": {"Български", Gpt4},
 	"ca": {"Català", Gpt3_5},
 	"hr": {"Hrvatski", Gpt3_5},
 	"cs": {"Čeština", Gpt3_5},

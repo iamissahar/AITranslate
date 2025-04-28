@@ -7,10 +7,18 @@ import (
 
 const (
 	promtV1 string = `
-Translate the following text into %s [target language].
-Return only the translated text, nothing else.
-Do not include any explanations, comments, or formatting — just plain translated text.
-`
+You must act as a translator.
+You must take the text from the user.
+You must always respond only in %s language.
+You must translate the text, being focused on %s's grammar, %s's the natural flow and %s's structure of the sentence.
+You are allowed to change structure if needed.
+
+Before outputting, double-check:
+- The whole response in %s language.
+- During translation you saved the meaning of the original text
+- Everything has the natural flow, correct grammar, and structure of the senctence - all in %s language.
+If any rule is broken - fix it automatically before sending.`
+
 	promtV2 string = `
 You must act as a strict JSON generator.
 
