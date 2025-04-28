@@ -3,7 +3,7 @@ let currentlineHeight = 10
 let stopgrowing = false
 let phraseProcess
 let i = 0
-let popup, content, errorImg, copyLogo, checkmark, textBtn, div, hiddenPhrase, copyBtn, textNod, closeBtn, isBusy
+let popup, content, errorImg, copyLogo, checkmark, textBtn, div, phrase, hiddenPhrase, copyBtn, textNod, closeBtn, isBusy
 let hiddenTagName, hiddenHost, visibleTagName, visibleHost
 let wordHolder = []
 let hiddenWordHolder = []
@@ -166,7 +166,7 @@ function addInnerText(obj, objhidden, text) {
 function regularTextChange(text) {
     return new Promise((resolve) => {
         hiddenPhrase.textContent += text;
-        content.innerHTML += text;
+        phrase.textContent += text;
 
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
@@ -179,6 +179,7 @@ function regularTextChange(text) {
 function clearAll() {
     return new Promise((resolve) => {
         hiddenPhrase.textContent = ""
+        phrase.style.display = "block"
         textNod.remove()
 
         requestAnimationFrame(() => {
@@ -330,7 +331,8 @@ function restructPopup(top, height, bottom) {
     })
 }
 
-function usualInsert(oneWord, meaning, indx, j) {
+function usualInsert(oneWord, meaning, indx, j, overflow) {
+    const lw = linewidth
     wordHolder[j].aWord.style.display = "block"
     wordHolder[j].partOfSpeech.innerText = `[${oneWord.part_of_speech}]`
     wordHolder[j].context.innerText = meaning.context
@@ -339,7 +341,10 @@ function usualInsert(oneWord, meaning, indx, j) {
 
     if (indx + 1 < oneWord.meanings.length) {
         lineHolder[indx].style.display = "block"
-        lineHolder[indx].style.width = `${linewidth}px`
+        if (overflow) {
+            lw = lw - 8
+        }
+        lineHolder[indx].style.width = `${lw}px`
     }
 
     isBusy[j] = true
@@ -371,7 +376,7 @@ async function insertOneWordStructure(oneWord) {
                 }
             }
 
-            indx = await usualInsert(oneWord, meaning, indx, j)
+            indx = await usualInsert(oneWord, meaning, indx, j, overflow)
         }
     }
 
@@ -1152,6 +1157,7 @@ function dataIntoLets(hidden, visible) {
     textNod = visible.getElementById('status_message')
     console.log("content.childNodes: ", content.childNodes, "textNod.nodeType = ",textNod.nodeType, Node.TEXT_NODE)
     hiddenPhrase = hidden.getElementById('hidden_phrase')
+    phrase = visible.getElementById('phrase')
     copyBtn = visible.getElementById('copy_btn')
     closeBtn = visible.getElementById('close_btn')
     isBusy = [false, false, false, false, false]

@@ -30,12 +30,14 @@ async function oneWord(json, port) {
 
 async function request(json, port) {
   try {
+    console.log(json)
     const response = await fetch("https://nathanissahar.me/change_language", {
-      method: "POST",
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: json,
     })
     const data = await response.json();
+    console.log(data)
     port.postMessage({ ok: response.ok, data: data });
   } catch (err) {
     port.postMessage({ error: err.toString() });
@@ -81,6 +83,7 @@ chrome.runtime.onConnect.addListener((port) => {
     });
   } else if (port.name === "change_language") {
     port.onMessage.addListener((msg) => {
+      console.log(msg)
       request(JSON.stringify(msg), port);
     })
   } else if (port.name === "one_word") {

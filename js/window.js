@@ -31,15 +31,12 @@ const allLanguages = [
     { code: 'it', name: 'Italiano' },
     { code: 'ja', name: '日本語' },
     { code: 'jw', name: 'Basa Jawa' },
-    { code: 'km', name: 'ភាសាខ្មែរ' },
     { code: 'ko', name: '한국어' },
     { code: 'la', name: 'Latina' },
     { code: 'lv', name: 'Latviešu' },
     { code: 'lt', name: 'Lietuvių' },
     { code: 'ml', name: 'മലയാളം' },
     { code: 'mr', name: 'मराठी' },
-    { code: 'my', name: 'မြန်မာ' },
-    { code: 'ne', name: 'नेपाली' },
     { code: 'no', name: 'Norsk' },
     { code: 'pl', name: 'Polski' },
     { code: 'pt', name: 'Português' },
@@ -47,11 +44,9 @@ const allLanguages = [
     { code: 'ro', name: 'Română' },
     { code: 'ru', name: 'Русский' },
     { code: 'sr', name: 'Српски' },
-    { code: 'si', name: 'සිංහල' },
     { code: 'sk', name: 'Slovenčina' },
     { code: 'sl', name: 'Slovenščina' },
     { code: 'es', name: 'Español' },
-    { code: 'su', name: 'Basa Sunda' },
     { code: 'sw', name: 'Kiswahili' },
     { code: 'sv', name: 'Svenska' },
     { code: 'ta', name: 'தமிழ்' },
@@ -62,26 +57,10 @@ const allLanguages = [
     { code: 'ur', name: 'اردو' },
     { code: 'vi', name: 'Tiếng Việt' },
     { code: 'cy', name: 'Cymraeg' },
-    { code: 'xh', name: 'IsiXhosa' },
-    { code: 'yi', name: 'ייִדיש' },
-    { code: 'zu', name: 'IsiZulu' },
-    { code: 'am', name: 'አማርኛ' },
-    { code: 'az', name: 'Azərbaycanca' },
-    { code: 'be', name: 'Беларуская' },
-    { code: 'eu', name: 'Euskara' },
-    { code: 'gl', name: 'Galego' },
-    { code: 'ha', name: 'Hausa' },
-    { code: 'ht', name: 'Kreyòl Ayisyen' },
-    { code: 'ka', name: 'ქართული' },
-    { code: 'kn', name: 'ಕನ್ನಡ' },
-    { code: 'mg', name: 'Malagasy' },
-    { code: 'ps', name: 'پښتو' },
-    { code: 'qu', name: 'Qhichwa' },
-    { code: 'oc', name: 'Occitan' },
-    { code: 'ga', name: 'Gaeilge' },
     { code: 'he', name: 'עברית' },
-    { code: 'mk', name: 'Македонски' }
+    { code: 'mk', name: 'Македонски' },
 ];
+
 
 async function sendRequest2(status) {
     const userID = await new Promise((resolve) => {
@@ -96,6 +75,7 @@ async function sendRequest2(status) {
     })
 
     port.onMessage.addListener((msg) => {
+        console.log(msg)
         if (msg.ok) {
             status.innerText = "Success!";
             const body = msg.data;

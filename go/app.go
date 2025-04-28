@@ -296,9 +296,9 @@ func getResponseWithOpenAI(r *Request) (*TranslationResponse, error) {
 	)
 	l := Languages[r.Lang]
 	openai := &OpenAIReq{
-		Model: model,
+		Model: l[1],
 		Messages: []*message{
-			{Role: "assistant", Content: fmt.Sprintf(promtV2, l, l, l, l, l)},
+			{Role: "assistant", Content: fmt.Sprintf(promtV2, l[0], l[0], l[0], l[0], l[0])},
 			{Role: "user", Content: r.Text}},
 		Stream:      false,
 		Temperature: 0.0,
@@ -353,10 +353,11 @@ func getResponseWithOpenAI(r *Request) (*TranslationResponse, error) {
 func streamWithOpenAI(r *Request) {
 	defer close(r.Stream)
 	var resp *http.Response
+	l := Languages[r.Lang]
 	openai := &OpenAIReq{
-		Model: model,
+		Model: l[1],
 		Messages: []*message{
-			{Role: "assistant", Content: fmt.Sprintf(promtV1, Languages[r.Lang])},
+			{Role: "assistant", Content: fmt.Sprintf(promtV1, l[0])},
 			{Role: "user", Content: r.Text}},
 		Stream:      true,
 		Temperature: 0.2,
