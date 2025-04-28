@@ -22,9 +22,11 @@ async function oneWord(json, port) {
       body: json,
     })
     const data = await response.json();
-    if (data && data.error === "") {
+    if (data && !data.error) {
+      console.log("hiV1! ", data)
       port.postMessage({ ok: response.ok, data: data })
-    } else if (data.error !== "") {
+    } else if (data.error) {
+      console.log("hiV2! ", data)
       port.postMessage({ ok: response.ok, error: data.error})
     }
   } catch (err) {
@@ -34,7 +36,6 @@ async function oneWord(json, port) {
 
 async function request(json, port) {
   try {
-    console.log(json)
     const response = await fetch("https://nathanissahar.me/change_language", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
