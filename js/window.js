@@ -77,8 +77,9 @@ async function sendRequest2(status) {
     port.onMessage.addListener((msg) => {
         console.log(msg)
         if (msg.ok) {
-            status.innerText = "Success!";
-            const body = msg.data;
+            status.innerText = "Success!"
+            const body = msg.data
+            console.log(body)
             chrome.storage.local.set({
                 new_language: selectedLanguage,
                 user_id: body.user_id

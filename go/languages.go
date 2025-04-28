@@ -2,14 +2,14 @@ package app
 
 const (
 	Gpt3_5 = "gpt-3.5-turbo"
-	Gpt4   = "gpt-4o-mini"
+	Gpt4   = "gpt-4"
 )
 
 var Languages = map[string][]string{
 	"af": {"Afrikaans", Gpt3_5},
 	"sq": {"Shqip", Gpt3_5},
-	"ar": {"العربية", Gpt3_5},
-	"hy": {"Հայերեն", Gpt3_5},
+	"ar": {"العربية", Gpt4},
+	"hy": {"Հայերեն", Gpt4},
 	"bn": {"বাংলা", Gpt4},
 	"bs": {"Bosanski", Gpt3_5},
 	"bg": {"Български", Gpt3_5},
@@ -21,7 +21,7 @@ var Languages = map[string][]string{
 	"en": {"English", Gpt3_5},
 	"eo": {"Esperanto", Gpt3_5},
 	"et": {"Eesti", Gpt3_5},
-	"tl": {"Filipino", Gpt3_5},
+	"tl": {"Filipino", Gpt4},
 	"fi": {"Suomi", Gpt3_5},
 	"fr": {"Français", Gpt3_5},
 	"de": {"Deutsch", Gpt3_5},
@@ -32,7 +32,7 @@ var Languages = map[string][]string{
 	"is": {"Íslenska", Gpt3_5},
 	"id": {"Bahasa Indonesia", Gpt3_5},
 	"it": {"Italiano", Gpt3_5},
-	"ja": {"日本語", Gpt3_5},
+	"ja": {"日本語", Gpt4},
 	"jw": {"Basa Jawa", Gpt4},
 	"ko": {"한국어", Gpt3_5},
 	"la": {"Latina", Gpt3_5},

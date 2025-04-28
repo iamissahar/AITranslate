@@ -22,7 +22,11 @@ async function oneWord(json, port) {
       body: json,
     })
     const data = await response.json();
-    port.postMessage({ ok: response.ok, data: data });
+    if (data && data.error === "") {
+      port.postMessage({ ok: response.ok, data: data })
+    } else if (data.error !== "") {
+      port.postMessage({ ok: response.ok, error: data.error})
+    }
   } catch (err) {
     port.postMessage({ error: err.toString() });
   }
@@ -36,13 +40,8 @@ async function request(json, port) {
       headers: { "Content-Type": "application/json" },
       body: json,
     })
-    const data = await response.json();
-    console.log(data)
-    if (data && data.error === "") {
-      port.postMessage({ ok: response.ok, data: data })
-    } else if (data.error !== "") {
-      port.postMessage({ ok: response.ok, error: data.error})
-    }
+    const data = await response.json()
+    port.postMessage({ ok: response.ok, data: data })
   } catch (err) {
     port.postMessage({ error: err.toString() });
   }
