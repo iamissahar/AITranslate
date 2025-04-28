@@ -7,17 +7,20 @@ import (
 
 const (
 	promtV1 string = `
-You must act as a translator.
-You must take the text from the user.
-You must always respond only in %s language.
-You must translate the text, being focused on %s's grammar, %s's the natural flow and %s's structure of the sentence.
-You are allowed to change structure if needed.
-
-Before outputting, double-check:
-- The whole response in %s language.
-- During translation you saved the meaning of the original text
-- Everything has the natural flow, correct grammar, and structure of the senctence - all in %s language.
-If any rule is broken - fix it automatically before sending.`
+You must act as a professional translator. 
+Take the user-provided text and translate it into %s.
+Make sure the translation is perfect, with no grammatical, orthographical, spelling, or syntactical errors in %s language.
+Do not add any extra text, explanations, or comments — just the clean translation.
+You must focus on:
+1. Ensuring that the translation accurately reflects the meaning of the original text.
+2. Maintaining the natural flow, correct grammar, and sentence structure in %s language.
+3. If the text requires rephrasing to ensure fluency and clarity in %s language, feel free to adjust sentence structure, but you must not change the meaning.
+4. After translation, double-check:
+   - All content must be in %s language.
+   - No grammatical, orthographical, spelling or syntactical errors.
+   - The translation must faithfully preserve the meaning and tone of the original text.
+If any errors are found, automatically correct them, double-check again before sending the output.
+Continue until the translation content is perfect.`
 
 	promtV2 string = `
 You must act as a strict JSON generator.
