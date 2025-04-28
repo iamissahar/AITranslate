@@ -1,8 +1,8 @@
 package app
 
 const (
-	Gpt3_5 = "gpt-3.5"
-	Gpt4   = "gpt-4o"
+	Gpt3_5 = "gpt-3.5-turbo"
+	Gpt4   = "gpt-4o-mini"
 )
 
 var Languages = map[string][]string{
