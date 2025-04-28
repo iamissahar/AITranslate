@@ -148,9 +148,9 @@ type meaning struct {
 }
 
 type TranslationResponse struct {
-	PartOfSpeech string    `json:"part_of_speech"`
-	Meanings     []meaning `json:"meanings"`
-	Error        string    `json:"error"`
+	PartOfSpeech string    `json:"part_of_speech,omitempty"`
+	Meanings     []meaning `json:"meanings,omitempty"`
+	Error        string    `json:"error,omitempty"`
 }
 
 type choiceV2 struct {

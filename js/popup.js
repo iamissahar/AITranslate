@@ -468,7 +468,7 @@ async function goRequest(text) {
         console.log("got response")
         console.log(msg)
         if (msg.ok) {
-            if (msg.data.error !== "") {
+            if (msg.data.error) {
                 errorChanges("meaningless or nonsense input.").then(() => {
                     console.log("got an error")
                     port.disconnect();
