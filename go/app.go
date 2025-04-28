@@ -327,13 +327,16 @@ func getResponseWithOpenAI(r *Request) (*TranslationResponse, error) {
 					errorHandler(r.UserID, 4, "getResponseWithOpenAI()", err)
 				} else {
 					fmt.Println("[DEBUG] the response is valid")
-					ok, err = isResponseValid(&data, r)
-					if err != nil {
-						errorHandler(r.UserID, 5, "getResponseWithOpenAI()", err)
+					if data.Error != "" {
+						fmt.Println("[DEBUG] the input is meaningless or nonsense")
+						ok = true
+					} else {
+						ok, err = isResponseValid(&data, r)
+						if err != nil {
+							errorHandler(r.UserID, 5, "getResponseWithOpenAI()", err)
+						}
 					}
-
 					if ok {
-
 						updateDB(r.UserID, &CompleteStream{
 							ID:           op.ID,
 							Object:       op.Object,

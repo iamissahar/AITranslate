@@ -38,7 +38,11 @@ async function request(json, port) {
     })
     const data = await response.json();
     console.log(data)
-    port.postMessage({ ok: response.ok, data: data });
+    if (data && data.error === "") {
+      port.postMessage({ ok: response.ok, data: data })
+    } else if (data.error !== "") {
+      port.postMessage({ ok: response.ok, error: data.error})
+    }
   } catch (err) {
     port.postMessage({ error: err.toString() });
   }

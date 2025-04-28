@@ -119,12 +119,12 @@ const observer = new ResizeObserver(entries => {
     }
 })
 
-function errorChanges() {
+function errorChanges(text) {
     return new Promise((resolve) => {
         content.style.animation = "none"
         content.style.background = "none"
         content.style.color = "#0d0d0d"
-        textNod.textContent = "Sorry, I curently can't help you."
+        textNod.textContent = text
         errorImg.style.display = "block"
 
         requestAnimationFrame(() => {
@@ -431,8 +431,10 @@ async function goStream(text) {
             copyBtn.style.display = "flex"
             port.disconnect();
         } else if (msg.error) {
-            console.log("got an error")
-            port.disconnect();
+            errorChanges("Sorry, I currently can't help you").then(() => {
+                console.log("got an error")
+                port.disconnect();
+            })
         } else if (msg.chunk) {
             const uint8array = new Uint8Array(msg.chunk)
             streamResponseHandler(buffer, decoder, uint8array)
@@ -465,15 +467,23 @@ async function goRequest(text) {
     port.onMessage.addListener((msg) => {
         console.log("got response")
         console.log(msg)
-        if (msg) {
-            chrome.storage.local.set({ user_id: msg.user_id })
-            jsonResponseHandler(msg.data).then(() => {
-                copyBtn.style.display = "flex"
+        if (msg.ok) {
+            if (msg.data.error !== "") {
+                errorChanges("meaningless or nonsense input.").then(() => {
+                    console.log("got an error")
+                    port.disconnect();
+                })
+            } else {
+                chrome.storage.local.set({ user_id: msg.data.user_id })
+                jsonResponseHandler(msg.data).then(() => {
+                    port.disconnect();
+                })
+            }
+        } else {
+            errorChanges("sorry, I currently can't help you.").then(() => {
+                console.log("got an error")
                 port.disconnect();
             })
-        } else if (msg.error) {
-            console.log("got an error")
-            port.disconnect();
         } 
     })
 }
@@ -597,7 +607,7 @@ function copyText() {
         checkmark.style.display = "block";
         textBtn.textContent = "Copied";
 
-        navigator.clipboard.writeText(content.textContent).catch(err => {
+        navigator.clipboard.writeText(phrase.textContent).catch(err => {
             console.error("Failed to copy text: ", err);
             alert("Failed to copy text.");
         });

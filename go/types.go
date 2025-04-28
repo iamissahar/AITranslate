@@ -150,6 +150,7 @@ type meaning struct {
 type TranslationResponse struct {
 	PartOfSpeech string    `json:"part_of_speech"`
 	Meanings     []meaning `json:"meanings"`
+	Error        string    `json:"error"`
 }
 
 type choiceV2 struct {
