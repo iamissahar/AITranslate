@@ -121,18 +121,24 @@ const observer = new ResizeObserver(entries => {
 
 function errorChanges(text) {
     return new Promise((resolve) => {
-        content.style.animation = "none"
-        content.style.background = "none"
-        content.style.color = "#0d0d0d"
-        textNod.textContent = text
-        errorImg.style.display = "block"
+        turnOffAnimationAndCleanText().then(() => {
 
-        requestAnimationFrame(() => {
+            stopLoadingAnimation()
+
+            content.style.animation = "none"
+            content.style.background = "none"
+            content.style.color = "#0d0d0d"
+            textNod.textContent = text
+            errorImg.style.display = "block"
+            
+
             requestAnimationFrame(() => {
-                resolve();
-            });
-        });
-    });
+                requestAnimationFrame(() => {
+                    resolve()
+                })
+            })
+        })
+    })
 }
 
 function turnOffAnimationAndCleanText() {
@@ -174,6 +180,18 @@ function regularTextChange(text) {
             });
         });
     });
+}
+
+function finalTextChange(text) {
+    return new Promise((resolve) => {
+        phrase.textContent = text
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                resolve();
+            });
+        });
+    })
 }
 
 function clearAll() {
@@ -252,7 +270,7 @@ async function streamResponseHandler(buffer, decoder, value) {
             if (eventType === "data") {
                 await regularTextChange(parsed.text)
             } else if (eventType === "final_data") {
-                console.log("final data comes")
+                console.log("final data comes: ", parsed)
                 observer.disconnect();
                 currentlineHeight = 20;
                 stopgrowing = false;
@@ -402,44 +420,68 @@ async function jsonResponseHandler(msg) {
 
     })
 }
-
 async function goStream(text) {
     phraseProcess = true
-    const port = chrome.runtime.connect({ name: "stream_data" });
+    const port = chrome.runtime.connect({ name: "stream_data" })
+    
     const userID = await new Promise((resolve) => {
-                chrome.storage.local.get(["user_id"], (result) => {
-                    resolve(Number(result.user_id) || 0);
-                });
-            });
+        chrome.storage.local.get(["user_id"], (result) => {
+            resolve(Number(result.user_id) || 0);
+        })
+    })
+    
     const language = await new Promise((resolve) => {
-                chrome.storage.local.get(["new_language"], (result) => {
-                    resolve(result.new_language || navigator.language.slice(0, 2));
-                });
-            });
-    const decoder = new TextDecoder("utf-8");
-    var buffer = { value: "" };
+        chrome.storage.local.get(["new_language"], (result) => {
+            resolve(result.new_language || navigator.language.slice(0, 2));
+        })
+    })
+    
+    const decoder = new TextDecoder("utf-8")
+    var buffer = { value: "" }
+    let dataQueue = []
+    let isProcessing = false
 
     port.postMessage({
         user_id: userID,
         lang_code: language,
         text: text,
-    });
+    })
 
     port.onMessage.addListener((msg) => {
         if (msg.done) {
             console.log("stream ends")
             copyBtn.style.display = "flex"
-            port.disconnect();
+            port.disconnect()
         } else if (msg.error) {
             errorChanges("Sorry, I currently can't help you").then(() => {
                 console.log("got an error")
-                port.disconnect();
+                port.disconnect()
             })
         } else if (msg.chunk) {
             const uint8array = new Uint8Array(msg.chunk)
-            streamResponseHandler(buffer, decoder, uint8array)
+            dataQueue.push(uint8array)
+            processQueue()
         }
     })
+
+    async function processQueue() {
+        if (isProcessing) {
+            return
+        }
+        isProcessing = true
+        
+        while (dataQueue.length > 0) {
+            const chunk = dataQueue.shift()
+            streamResponseHandler(buffer, decoder, chunk)
+            await sleep(100)
+        }
+
+        isProcessing = false;
+    }
+
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
 }
 
 async function goRequest(text) {
@@ -468,8 +510,9 @@ async function goRequest(text) {
         console.log("got response")
         console.log(msg)
         if (msg.ok) {
-            if (msg.data.error) {
-                errorChanges("meaningless or nonsense input.").then(() => {
+            console.log(msg.data.content.error)
+            if (msg.data.content.error === "invalid input") {
+                errorChanges("Meaningless or nonsense input.").then(() => {
                     console.log("got an error")
                     port.disconnect();
                 })
@@ -480,7 +523,7 @@ async function goRequest(text) {
                 })
             }
         } else {
-            errorChanges("sorry, I currently can't help you.").then(() => {
+            errorChanges("Sorry, I currently can't help you.").then(() => {
                 console.log("got an error")
                 port.disconnect();
             })
