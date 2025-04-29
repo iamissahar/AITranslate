@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"regexp"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -77,7 +78,9 @@ func stream(router *gin.Engine) {
 				if peace, ok = <-req.Stream; ok {
 					ctx.SSEvent("data", peace)
 				} else {
-					ctx.SSEvent("final_data", gin.H{"user_id": req.UserID, "final_text": req.FinalRes})
+					re := regexp.MustCompile(`\s+`)
+					clean := re.ReplaceAllString(*req.FinalRes, " ")
+					ctx.SSEvent("final_data", gin.H{"user_id": req.UserID, "final_text": clean})
 					fmt.Println("[DEBUG] server's stream ends")
 				}
 				return ok
