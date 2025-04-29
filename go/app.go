@@ -230,6 +230,7 @@ func startScanning(resp *http.Response, r *Request) {
 		i      int = 2
 		isDone     = false
 		cs         = new(CompleteStream)
+		s string
 	)
 	reader := bufio.NewReader(resp.Body)
 	for !isDone {
@@ -239,7 +240,12 @@ func startScanning(resp *http.Response, r *Request) {
 				openAPIError(line, i, r.UserID, &isDone)
 				cs.Text = ""
 			}
+<<<<<<< HEAD
 			handleStream(line, cs, i, r, &isDone)
+=======
+			r.FinalRes = &s
+			handleStream(line, cs, i, r.UserID, &r.Stream, &isDone)
+>>>>>>> workspace
 		}
 		i++
 	}
@@ -361,7 +367,7 @@ func streamWithOpenAI(r *Request) {
 	openai := &OpenAIReq{
 		Model: l[1],
 		Messages: []*message{
-			{Role: "assistant", Content: fmt.Sprintf(promtV1, l[0], l[0], l[0], l[0])},
+			{Role: "assistant", Content: fmt.Sprintf(promtV1, l[0], l[0], l[0], l[0], l[0], l[0], l[0])},
 			{Role: "user", Content: r.Text}},
 		Stream:      true,
 		Temperature: 0.0,

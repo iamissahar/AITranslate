@@ -271,6 +271,13 @@ async function streamResponseHandler(buffer, decoder, value) {
                 await regularTextChange(parsed.text)
             } else if (eventType === "final_data") {
                 console.log("final data comes: ", parsed)
+                const f = parsed.final_text
+                if (phrase.innerText !== f) {
+                    console.log("doesn't match")
+                    console.log(phrase.innerText)
+                    console.log(f)
+                    await finalTextChange(f)
+                }
                 observer.disconnect();
                 currentlineHeight = 20;
                 stopgrowing = false;
