@@ -179,7 +179,7 @@ func openAPIError(line []byte, i, userID int, isDone *bool) {
 	}
 }
 
-func handleStream(line []byte, cs *CompleteStream, i, userID int, stream *chan *Response, isDone *bool) {
+func handleStream(line []byte, cs *CompleteStream, i int, r *Request, isDone *bool) {
 	chunk := new(StreamChunk)
 	linestr := string(line)
 	if strings.HasPrefix(linestr, "data: ") {
@@ -188,11 +188,11 @@ func handleStream(line []byte, cs *CompleteStream, i, userID int, stream *chan *
 			*isDone = true
 			fmt.Println("[DEBUG] 'done' has been caught. stream's ended")
 			fmt.Println("[DEBUG] the text from the response: ", cs.Text)
-			updateDB(userID, cs)
+			updateDB(r.UserID, cs)
 		}
 		if !*isDone {
 			if err := json.Unmarshal([]byte(data), chunk); err != nil {
-				errorHandler(userID, i, "callOpenAI()", err)
+				errorHandler(r.UserID, i, "callOpenAI()", err)
 			} else {
 				if cs.ID == "" && chunk.ID != "" {
 					cs.ID = chunk.ID
@@ -209,11 +209,12 @@ func handleStream(line []byte, cs *CompleteStream, i, userID int, stream *chan *
 				for _, choice := range chunk.Choices {
 					if choice != nil && choice.Delta != nil && choice.Delta.Content != "" && choice.FinishReason == nil {
 						cs.Text += choice.Delta.Content
+						*r.FinalRes += choice.Delta.Content
 						rr := &Response{
-							UserID: userID,
+							UserID: r.UserID,
 							Text:   choice.Delta.Content,
 						}
-						*stream <- rr
+						r.Stream <- rr
 					} else if choice.FinishReason != nil {
 						cs.FinishReason = *choice.FinishReason
 					}
@@ -238,7 +239,7 @@ func startScanning(resp *http.Response, r *Request) {
 				openAPIError(line, i, r.UserID, &isDone)
 				cs.Text = ""
 			}
-			handleStream(line, cs, i, r.UserID, &r.Stream, &isDone)
+			handleStream(line, cs, i, r, &isDone)
 		}
 		i++
 	}
