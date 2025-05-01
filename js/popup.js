@@ -228,17 +228,37 @@ function stopLoadingAnimation() {
     i = 0
 }
 
-function firstStep(id) {
+
+async function setTextDirection() {
+    const rtlLanguages = ['ar', 'he', 'ur'];
+    const language = await new Promise((resolve) => {
+        chrome.storage.local.get(["new_language"], (result) => {
+            resolve(result.new_language || navigator.language.slice(0, 2));
+        })
+    })
+    if (rtlLanguages.includes(language)) {
+        phrase.setAttribute("lang", language);
+        phrase.setAttribute("dir", "rtl")
+        await new Promise((resolve) => {
+            phrase.style.textAlign = "right"
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    resolve();
+                });
+            });
+        })
+    }
+}
+
+async function firstStep(id) {
     if (process) {
         console.log("got first data from a stream")
         process = false;
         chrome.storage.local.set({ user_id: id })
-        clearAll().then(() => {
-            turnOffAnimationAndCleanText().then(() => {
-                stopLoadingAnimation()
-                console.log("cleaned inner htmls & turned off text animation")
-            });
-        })
+        await clearAll()
+        await setTextDirection()
+        await turnOffAnimationAndCleanText()
+        stopLoadingAnimation()
     }
 }
 
@@ -264,10 +284,11 @@ async function streamResponseHandler(buffer, decoder, value) {
         try {
             const parsed = JSON.parse(data);
             if (data) {
-                firstStep(parsed.user_id)
+                await firstStep(parsed.user_id)
             } 
             
             if (eventType === "data") {
+                console.log(phrase)
                 await regularTextChange(parsed.text)
             } else if (eventType === "final_data") {
                 console.log("final data comes: ", parsed)
@@ -416,79 +437,89 @@ async function insertOneWordStructure(oneWord) {
 
 async function jsonResponseHandler(msg) {
     return new Promise((resolve) => {
-        firstStep(msg.user_id)
-        insertOneWordStructure(msg.content)
+        firstStep(msg.user_id).then(() => {
+            insertOneWordStructure(msg.content)
 
-        requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-                resolve()
+                requestAnimationFrame(() => {
+                    resolve()
+                });
             });
-        });
-
+        })
     })
 }
+
+class Queue {
+    constructor() {
+        this.queue = []
+        this.processing = false
+    }
+  
+    async add(task) {
+        return new Promise((resolve, reject) => {
+            this.queue.push({ task, resolve, reject });
+            this.processQueue();
+        });
+    }
+  
+    async processQueue() {
+        if (this.processing) return;
+
+        this.processing = true;
+
+        while (this.queue.length > 0) {
+            const { task, resolve, reject } = this.queue.shift();
+            try {
+                const result = await task();
+                resolve(result);
+            } catch (err) {
+                reject(err);
+            }
+        }
+        this.processing = false;
+    }
+}
+
 async function goStream(text) {
-    phraseProcess = true
-    const port = chrome.runtime.connect({ name: "stream_data" })
-    
-    const userID = await new Promise((resolve) => {
+    const port = chrome.runtime.connect({ name: "stream_data" });
+  
+    const userID = await new Promise((resolve) =>
         chrome.storage.local.get(["user_id"], (result) => {
             resolve(Number(result.user_id) || 0);
         })
-    })
-    
-    const language = await new Promise((resolve) => {
+    );
+  
+    const language = await new Promise((resolve) =>
         chrome.storage.local.get(["new_language"], (result) => {
             resolve(result.new_language || navigator.language.slice(0, 2));
         })
-    })
-    
-    const decoder = new TextDecoder("utf-8")
-    var buffer = { value: "" }
-    let dataQueue = []
-    let isProcessing = false
-
+    );
+  
+    const decoder = new TextDecoder("utf-8");
+    const buffer = { value: "" };
+    const dataQueue = new Queue();
+  
     port.postMessage({
         user_id: userID,
         lang_code: language,
         text: text,
-    })
-
+    });
+  
     port.onMessage.addListener((msg) => {
         if (msg.done) {
-            console.log("stream ends")
-            copyBtn.style.display = "flex"
-            port.disconnect()
+            console.log("stream ends");
+            copyBtn.style.display = "flex";
+            port.disconnect();
         } else if (msg.error) {
             errorChanges("Sorry, I currently can't help you").then(() => {
-                console.log("got an error")
-                port.disconnect()
-            })
+            console.log("got an error");
+            port.disconnect();
+            });
         } else if (msg.chunk) {
-            const uint8array = new Uint8Array(msg.chunk)
-            dataQueue.push(uint8array)
-            processQueue()
+            const uint8array = new Uint8Array(msg.chunk);
+            dataQueue.add(() => streamResponseHandler(buffer, decoder, uint8array));
         }
-    })
-
-    async function processQueue() {
-        if (isProcessing) {
-            return
-        }
-        isProcessing = true
-        
-        while (dataQueue.length > 0) {
-            const chunk = dataQueue.shift()
-            streamResponseHandler(buffer, decoder, chunk)
-            await sleep(100)
-        }
-
-        isProcessing = false;
-    }
-
-    function sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
+    });
 }
 
 async function goRequest(text) {

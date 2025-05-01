@@ -26,9 +26,7 @@ Before sending your output, you must:
 
 If any mistake is found during your review, fix it and review the corrected text again.
 
-Repeat this process until the translation is absolutely flawless, and just like a native %s speaker would write it.
-
-`
+Repeat this process until the translation is absolutely flawless, and just like a native %s speaker would write it.`
 
 	promtV2 string = `
 You must act as a strict JSON generator.
