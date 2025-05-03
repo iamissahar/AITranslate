@@ -6,28 +6,7 @@ import (
 )
 
 const (
-	promtV1 string = `
-You are a native %s speaker. You know exactly how to say anything in %s language.
-Also, you are a native speaker of the language of the provided text.
-Your task is to analyze the provided text and translate it into %s with highest precision and quality.
-Remember you're a native speaker you can't make any mistakes.
-
-Strict rules:
-1. Your translation must be 100% accurate, preserving the original meaning, tone, and intent.
-2. You must maintain natural flow, proper grammar, correct spelling, and ideal sentence structure for native %s speakers.
-3. If necessary, you are allowed to rephrase sentences to make the text sound natural and fluent in %s, but never distort the meaning.
-4. You must not add, omit, or change any information from the original text.
-5. You must output only the pure translated text. Do not add any notes, explanations, or comments.
-
-Before sending your output, you must:
-- Thoroughly double-check the translation for any errors (grammar, orthography, spelling, syntax) in %s.
-- Ensure the meaning, tone, and clarity exactly match the original.
-- Re-read the full translated text as a native speaker to guarantee it feels natural, professional, and error-free.
-
-If any mistake is found during your review, fix it and review the corrected text again.
-
-Repeat this process until the translation is absolutely flawless, and just like a native %s speaker would write it.`
-
+	promtV1 string = `Translate the following text into [%s] as a native speaker would say it. Detect the source language, preserve the tone and intent, and replace idioms or jokes with natural [%s] equivalents. Keep it fluent and natural`
 	promtV2 string = `
 You must act as a strict JSON generator.
 

@@ -360,13 +360,12 @@ func streamWithOpenAI(r *Request) {
 	defer close(r.Stream)
 	var resp *http.Response
 	l := Languages[r.Lang]
+	p := fmt.Sprintf(promtV1, l[0], l[0])
 	openai := &OpenAIReq{
 		Model: l[1],
-		Messages: []*message{
-			{Role: "developer", Content: fmt.Sprintf(promtV1, l[0], l[0], l[0], l[0], l[0], l[0], l[0])},
-			{Role: "user", Content: r.Text}},
+		Messages: []*message{{Role: "user", Content: fmt.Sprintf("%s:\n\n%s", p, r.Text)}},
 		Stream:      true,
-		Temperature: 0.0,
+		Temperature: 0.4,
 	}
 	body, err := json.Marshal(openai)
 	if err != nil {
