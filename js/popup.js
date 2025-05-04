@@ -570,16 +570,27 @@ async function goRequest(text) {
 }
 
 async function translation(text) {
-    const amount = text.trim().split(/\s+/).length;
-    
+    const trimmed = text.trim();
+
+    const isNoWordDelimiterLang = /[\u4E00-\u9FFF\u3040-\u30FF\u0E00-\u0E7F\u1780-\u17FF\u1000-\u109F]/.test(trimmed);
+
+    if (isNoWordDelimiterLang) {
+        console.log("detected CJK or similar script – starting streaming");
+        await goStream(trimmed);
+        return;
+    }
+
+    const amount = trimmed.split(/\s+/).length;
+
     if (amount > 4) {
-        console.log("starting streaming")
-        await goStream(text)
+        console.log("starting streaming");
+        await goStream(trimmed);
     } else {
-        console.log("starting requesting")
-        await goRequest(text)
+        console.log("starting requesting");
+        await goRequest(trimmed);
     }
 }
+
 
 function startLoadingAnimation() {
     let dotCount = 0;
