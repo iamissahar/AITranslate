@@ -1,12 +1,12 @@
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
-    id: "ai_translate",
-    title: "AI Translate",
+    id: "ai_translation",
+    title: "AI Translation",
     contexts: ["selection"],
   });
 });
 chrome.contextMenus.onClicked.addListener(function(info, tab) {
-  if (info.menuItemId === "ai_translate") {
+  if (info.menuItemId === "ai_translation") {
       console.log("sending message to content.js")
       chrome.tabs.sendMessage(tab.id, {
         action: "translate",

@@ -1,15 +1,16 @@
 {
   "manifest_version": 3,
   "name": "AI Translation",
-  "description": "AI Translation",
-  "version": "0.1.0",
-  "permissions": ["activeTab", "storage", "contextMenus", "https://nathanissahar.me/"],
+  "description": "Understand any language instantly with AI Translation — a lightweight, one-click extension powered by ChatGPT.",
+  "version": "0.1.1",
+  "permissions": ["activeTab", "storage", "contextMenus"],
   "background": {
     "service_worker": "js/background.js",
     "type": "module"
   },
   "icons": {
-    "16": "icons/menu_logo.png"
+    "16": "icons/menu_logo.png",
+    "128": "icons/logo_6.png"
   },
   "action": {
     "default_popup": "html/window.html",
@@ -24,7 +25,7 @@
       "js": ["js/content.js", "js/popup.js"]
     }
   ],
-  "host_permissions": ["<all_urls>"],
+  "host_permissions": ["https://nathanissahar.me/"],
   "web_accessible_resources": [
     {
       "resources": [

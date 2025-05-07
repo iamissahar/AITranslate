@@ -1176,7 +1176,7 @@ function visible() {
                 <div class="window-header">
                     <div class="icon-name-holder">
                         <img class="window-img" src=${smallLogo}>
-                        <span class="window-title">AI Translate</span>
+                        <span class="window-title">AI Translation</span>
                     </div>
                     <div class="button-holder">
                         <button class="copy-btn" id="copy_btn">
