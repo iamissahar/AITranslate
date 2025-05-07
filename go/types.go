@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	promtV1 string = `Translate the following text into [%s] as a native speaker would say it. Detect the source language, preserve the tone and intent, and replace idioms or jokes with natural [%s] equivalents. Keep it fluent and natural`
+	promtV1 string = `Translate the following text into [%s] as a native speaker would say it. Detect the source language, preserve the tone and intent, and replace idioms or jokes with natural [%s] equivalents. If you are not able to detect the tone, translate it in formal language. Keep it fluent and natural`
 	promtV2 string = `
 You must act as a strict JSON generator.
 

@@ -363,7 +363,7 @@ func streamWithOpenAI(r *Request) {
 	p := fmt.Sprintf(promtV1, l[0], l[0])
 	openai := &OpenAIReq{
 		Model: l[1],
-		Messages: []*message{{Role: "user", Content: fmt.Sprintf("%s:\n\n%s", p, r.Text)}},
+		Messages: []*message{{Role: "developer", Content: p},{Role: "user", Content: r.Text}},
 		Stream:      true,
 		Temperature: 0.4,
 	}
