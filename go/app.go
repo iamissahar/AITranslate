@@ -557,6 +557,7 @@ func (js *Jsoner) handleResponse(rs *http.Response, userID int) string {
 		if len(op.Choices) > 0 && op.Choices[0].Message != nil {
 			err = json.Unmarshal([]byte(op.Choices[0].Message.Content), &tr)
 			if err == nil {
+				fmt.Println("033[34m[DEBUG]\033[0m ", op)
 				js.s.UpdateDB(userID, fmt.Sprintf(COMPLETE_ACTION_JSON, op.ID, op.Object, int(op.Created), op.Model, "done", op.Choices[0].Message.Content))
 				res = fmt.Sprintf(DEFAULT_SUCCESS_JSON_TRANSLATION, userID, op.Choices[0].Message.Content)
 			} else {

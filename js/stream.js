@@ -51,12 +51,12 @@ class Stream {
         console.log(parsed);
         if (this.once) {
           this.once = false;
-          chrome.storage.local.set({ user_id: parsed.user_id });
+          chrome.storage.local.set({ user_id: parsed.result.user_id });
           this.output.Set();
         }
 
-        if (eventType === "data" && parsed !== undefined) {
-          this.output.Add(parsed.text);
+        if (eventType === "data" && parsed.result !== undefined) {
+          this.output.Add(parsed.result.text);
         }
       } catch (err) {
         console.error(err);

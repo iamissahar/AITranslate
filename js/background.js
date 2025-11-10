@@ -27,8 +27,9 @@ chrome.contextMenus.onClicked.addListener(function (info, tab) {
   }
 });
 
-async function oneWord(msg, responseF) {
+async function TranslateAWord(msg, responseF) {
   try {
+    console.log("[DEBUG]", msg);
     const response = await fetch(
       DOMAIN + "/ai_translate/v2/translate/get_json",
       {
@@ -38,15 +39,18 @@ async function oneWord(msg, responseF) {
       },
     );
     const data = await response.json();
-    if (data && !data.error) {
+    if (data && data.ok) {
       console.log("hiV1! ", data);
-      responseF({ ok: true, data: data });
-    } else if (data.error) {
+      responseF(data);
+    } else if (data && !data.ok) {
       console.log("hiV2! ", data);
-      responseF({ ok: false, error: data.error });
+      responseF(data);
     }
   } catch (err) {
-    responseF({ ok: false, error: err.toString() });
+    responseF({
+      ok: false,
+      result: { user_id: msg.user_id, error: err.toString() },
+    });
   }
 }
 
@@ -171,7 +175,7 @@ async function messageHandler(msg, sender, response) {
   } else if (msg.action === "get_language") {
     GetLangauge().then((lang) => response(lang));
   } else if (msg.action === "translate_one_word") {
-    oneWord(msg.data, response);
+    TranslateAWord(msg.data, response);
   } else if (msg.action === "change_language") {
     changeLanguge(msg.data, response);
   } else if (msg.action === "abort_stream") {

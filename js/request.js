@@ -16,8 +16,8 @@ class RequestJson {
                 resolve(res.user_id || 0);
               });
             }),
-            language: await new Promise((resolve) => {
-              chrome.runtime.sendMessage({ action: "get_languge" }, (res) => {
+            lang_code: await new Promise((resolve) => {
+              chrome.runtime.sendMessage({ action: "get_language" }, (res) => {
                 resolve(res.language || "");
               });
             }),

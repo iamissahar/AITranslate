@@ -88,7 +88,9 @@ class PopupOutput extends Output {
     console.log("cleared");
   }
 
-  #AddJsonStructure() {}
+  #AddJsonStructure(text) {
+    this.output.innerText = text;
+  }
 
   /**@param {string} text  */
   Add(text) {
@@ -101,7 +103,7 @@ class PopupOutput extends Output {
         this.#i += Output.BUFFER_LENGTH;
       }
     } else {
-      this.#AddJsonStructure();
+      this.#AddJsonStructure(text);
     }
   }
 
