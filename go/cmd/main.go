@@ -79,7 +79,7 @@ func (api *API) begin(req *Request, trsl app.Translator, ctx *gin.Context, e *ev
 		err  error
 	)
 	if api.isDataRelevant(req, ctx, true) {
-		app.CheckUserData(api.s, req.UserID, req.Lang)
+		app.CheckUserData(api.s, &req.UserID, req.Lang)
 		if e != nil {
 			go trsl.Do(req.UserID, req.Lang, req.Text)
 			ctx.Stream(e.step)

@@ -573,11 +573,11 @@ func (js *Jsoner) handleResponse(rs *http.Response, userID int) string {
 	return res
 }
 
-func CheckUserData(s *storage.Storage, userID int, lang string) {
-	if s.IsNewUser(userID) {
-		s.NewUser(lang)
+func CheckUserData(s *storage.Storage, userID *int, lang string) {
+	if s.IsNewUser(*userID) {
+		*userID = s.NewUser(lang)
 	} else {
-		s.UpdateUserData(userID, lang)
+		s.UpdateUserData(*userID, lang)
 	}
 }
 
