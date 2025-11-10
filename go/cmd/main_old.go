@@ -216,14 +216,14 @@ func startAPI() {
 	router.POST("/ai_translate/v2/translate/get_json", api.getJson)
 	router.PATCH("/ai_translate/v2/change_language", api.changeLanguage)
 	// for tests
-	err := router.RunTLS(":988", "/certs/fullchain.pem", "/certs/privkey.pem")
+	err := router.Run(":4200")
 	if err != nil {
 		panic(err)
 	}
 	// for work
-	// err := router.RunTLS(":443", "/certs/fullchain.pem", "/certs/privkey.pem")
+	// err = router.Run(":4200")
 	// if err != nil {
-	// 	panic(err)
+	// panic(err)
 	// }
 }
 
