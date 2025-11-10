@@ -66,6 +66,7 @@ func (e *event) step(w io.Writer) bool {
 			e.ctx.Data(http.StatusInternalServerError, "application/json", []byte(chunk))
 		} else {
 			fmt.Println("\033[34m[DEBUG]\033[0m sending chunk to client")
+			fmt.Println("\033[34m[DEBUG]\033[0m ", chunk)
 			e.ctx.SSEvent("data", chunk)
 		}
 	}

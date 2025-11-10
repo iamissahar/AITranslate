@@ -531,7 +531,7 @@ func (str *Streamer) handleResponse(rs *http.Response, userID int) {
 								cs.Text += choice.Delta.Content
 								str.ch <- fmt.Sprintf(DEFAULT_OK_STREAM_CHUNK, userID, choice.Delta.Content)
 							} else if choice.FinishReason != nil {
-								str.ch <- fmt.Sprintf(DEFAULT_NOTOK_STREAM_CHUNK, userID, *choice.FinishReason)
+								// str.ch <- fmt.Sprintf(DEFAULT_NOTOK_STREAM_CHUNK, userID, *choice.FinishReason)
 							}
 						}
 					}

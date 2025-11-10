@@ -91,6 +91,7 @@ async function requestResponse(port, msg) {
         console.error(err);
         port.postMessage({ ok: false });
       } catch (e) {
+        console.error(e);
         port.postMessage({ ok: false });
       }
       messageHandler({ action: "abort_stream" }, null, null);
