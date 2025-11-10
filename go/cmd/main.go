@@ -118,7 +118,7 @@ func (api *API) getJson(ctx *gin.Context) {
 func (api *API) changeLanguage(ctx *gin.Context) {
 	var req = new(Request)
 	if api.isDataRelevant(req, ctx, false) {
-		app.CheckUserData(api.s, req.UserID, req.Lang)
+		app.CheckUserData(api.s, &req.UserID, req.Lang)
 		api.s.ChangeLanguage(req.UserID, req.Lang)
 		ctx.Data(http.StatusOK, "application/json", []byte(fmt.Sprintf(app.DEFAULT_SUCCESS_JSON, req.UserID)))
 	}
