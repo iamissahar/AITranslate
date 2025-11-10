@@ -545,6 +545,10 @@ func (str *Streamer) handleResponse(rs *http.Response, userID int) {
 	_ = rs.Body.Close()
 }
 
+func (js *Jsoner) Init(s *storage.Storage) {
+	js.s = s
+}
+
 func (js *Jsoner) handleResponse(rs *http.Response, userID int) string {
 	var (
 		op  = new(OpenAI)

@@ -114,6 +114,7 @@ func (api *API) getJson(ctx *gin.Context) {
 		req    = new(Request)
 		jsoner = new(app.Jsoner)
 	)
+	jsoner.Init(api.s)
 	api.begin(req, jsoner, ctx, nil)
 }
 
