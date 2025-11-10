@@ -63,6 +63,7 @@ func (e *event) step(w io.Writer) bool {
 	)
 	if chunk, ok = <-e.ch; ok {
 		if bytes.HasPrefix([]byte(chunk), []byte("{\"ok\": false,")) {
+			fmt.Println("\033[34m[DEBUG]\033[0m ", chunk)
 			e.ctx.Data(http.StatusInternalServerError, "application/json", []byte(chunk))
 		} else {
 			fmt.Println("\033[34m[DEBUG]\033[0m sending chunk to client")

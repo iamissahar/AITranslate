@@ -537,7 +537,7 @@ func (str *Streamer) handleResponse(rs *http.Response, userID int) {
 					}
 				}
 			} else {
-				str.ch <- fmt.Sprintf(DEFAULT_STREAM_ERROR, userID)
+				// str.ch <- fmt.Sprintf(DEFAULT_STREAM_ERROR, userID)
 			}
 		}
 	}
