@@ -10,6 +10,8 @@ body {
 /* Popup */
 .popup {
     width: 480px;
+    height: 550px;
+    max-height: 550px;
     background-color: #ffffff;
     border-radius: 16px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
@@ -98,6 +100,12 @@ body {
     transition:
         border-color 0.2s,
         box-shadow 0.2s;
+}
+
+.output {
+    height: 235px;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .input:focus {
@@ -337,4 +345,43 @@ input:checked + .slider::before {
 
 .save-btn:hover {
     background-color: #4338ca;
+}
+.translation-result {
+    padding: 10px;
+    font-family: "Inter", sans-serif;
+    color: #111827;
+}
+
+.translation-result .part-of-speech {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 8px;
+    text-transform: capitalize;
+}
+
+.meaning-card {
+    background: #f3f4f6; /* совпадает с output */
+    border-radius: 12px;
+    padding: 10px;
+    margin-bottom: 8px;
+}
+
+.meaning-card .context {
+    font-weight: 500;
+    color: #2563eb; /* синий */
+    font-size: 13px;
+}
+
+.meaning-card .translation {
+    margin-top: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #16a34a; /* зеленый */
+}
+
+.meaning-card .example {
+    margin-top: 6px;
+    font-size: 13px;
+    font-style: italic;
+    color: #6b7280; /* серый */
 }

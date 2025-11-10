@@ -6,12 +6,20 @@ Your task is to translate it to your native language naturally, preserving meani
 2. Assume the user is not a native speaker of your language. Provide the most natural translation(s) possible.
 
 # Response Restrictions:
-1. Respond **only** in valid JSON format (no extra text).
-2. Expected structure:{"part_of_speech":string,"meanings":[{"context":string,"translation":string,"example":string}]}
-3. Each value must be in your native language.
-4. Provide between 1 and 5 possible meanings.
+1. Respond **only** in valid HTML format (no extra text).
+2. Expected structure:
+<div class="translation-result">
+<div class="part-of-speech">string</div>
+    <div class="meaning-card">
+        <div class="context">string</div>
+        <div class="translation">string</div>
+        <div class="example">string</div>
+    </div>
+</div>
+3. Each value has to be in your native language, exept the example should be in the language the given text in.
+4. Provide between 1 and 5 possible meanings (put them in different meaning-cards in your HTML structure).
 5. If the input is a single word, identify its part(s) of speech.
    - Example: "to be" is "verb"
    - Example: "run" is "verb, noun, adjective"
 6. If a word has multiple parts of speech, join them with commas in one string.
-7. Recheck that your output is valid JSON.
+7. Recheck that your output is valid HTML.

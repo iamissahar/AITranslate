@@ -31,14 +31,9 @@ class RequestJson {
     });
 
     if (res.ok) {
-      console.log(res.data.content.error);
-      if (res.data.content.error === "invalid input") {
-        this.output.SetError("Meaningless or nonsense input.");
-      } else {
-        chrome.storage.local.set({ user_id: msg.data.user_id });
-        this.output.Set();
-        this.output.Add(msg.content);
-      }
+      chrome.storage.local.set({ user_id: res.result.user_id });
+      this.output.Set();
+      this.output.Add(res.result.text);
     } else {
       this.output.SetError("Something went wrong. Please try again later.");
     }

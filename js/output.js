@@ -52,7 +52,7 @@ class Output {
 
     rtlLanguages = ["ar", "he", "ur"];
     language = await new Promise((resolve) => {
-      chrome.runtime.sendMessage({ action: "get_langauge" }, (res) => {
+      chrome.runtime.sendMessage({ action: "get_language" }, (res) => {
         resolve(res.language || "");
       });
     });

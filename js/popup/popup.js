@@ -65,6 +65,11 @@ var input = null;
 var settings = null;
 
 class PopupOutput extends Output {
+  static #BEFORE = `<div id="status_content" class="status-content">
+  <div class="status-message" id="status_message">
+    Translating
+  </div>
+</div>`;
   #deleteBtn = document.getElementById("output_delete");
   #copyBtn = document.getElementById("output_copy");
   #buffer = "";
@@ -88,8 +93,12 @@ class PopupOutput extends Output {
     console.log("cleared");
   }
 
-  #AddJsonStructure(text) {
+  SetError(text) {
     this.output.innerText = text;
+  }
+
+  #AddJsonStructure(text) {
+    this.output.innerHTML = PopupOutput.#BEFORE + text;
   }
 
   /**@param {string} text  */

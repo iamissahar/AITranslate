@@ -551,22 +551,25 @@ func (js *Jsoner) Init(s *storage.Storage) {
 
 func (js *Jsoner) handleResponse(rs *http.Response, userID int) string {
 	var (
-		op  = new(OpenAI)
-		tr  TranslationResponse
+		op = new(OpenAI)
+		// tr  TranslationResponse
 		res string
 		err error
 	)
 	err = json.NewDecoder(rs.Body).Decode(op)
 	if err == nil {
 		if len(op.Choices) > 0 && op.Choices[0].Message != nil {
-			err = json.Unmarshal([]byte(op.Choices[0].Message.Content), &tr)
-			if err == nil {
-				fmt.Println("033[34m[DEBUG]\033[0m ", op)
-				js.s.UpdateDB(userID, fmt.Sprintf(COMPLETE_ACTION_JSON, op.ID, op.Object, int(op.Created), op.Model, "done", op.Choices[0].Message.Content))
-				res = fmt.Sprintf(DEFAULT_SUCCESS_JSON_TRANSLATION, userID, op.Choices[0].Message.Content)
-			} else {
-				res = fmt.Sprintf(DEFAULT_ERROR, userID, "unable_to_unmarshal_json", err.Error())
-			}
+			js.s.UpdateDB(userID, fmt.Sprintf(COMPLETE_ACTION_JSON, op.ID, op.Object, int(op.Created), op.Model, "done", op.Choices[0].Message.Content))
+			res = fmt.Sprintf(DEFAULT_SUCCESS_JSON_TRANSLATION, userID, op.Choices[0].Message.Content)
+
+			// err = json.Unmarshal([]byte(op.Choices[0].Message.Content), &tr)
+			// if err == nil {
+			// 	fmt.Println("033[34m[DEBUG]\033[0m ", op)
+			// 	js.s.UpdateDB(userID, fmt.Sprintf(COMPLETE_ACTION_JSON, op.ID, op.Object, int(op.Created), op.Model, "done", op.Choices[0].Message.Content))
+			// 	res = fmt.Sprintf(DEFAULT_SUCCESS_JSON_TRANSLATION, userID, op.Choices[0].Message.Content)
+			// } else {
+			// 	res = fmt.Sprintf(DEFAULT_ERROR, userID, "unable_to_unmarshal_json", err.Error())
+			// }
 		} else {
 			res = fmt.Sprintf(DEFAULT_ERROR, userID, "invalid_response", "Open AI response is invalid")
 		}
