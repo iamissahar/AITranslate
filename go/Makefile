@@ -16,7 +16,7 @@ run.app:
 	-v /etc/letsencrypt/live/nathanissahar.me/fullchain.pem:/certs/fullchain.pem:ro \
   	-v /etc/letsencrypt/live/nathanissahar.me/privkey.pem:/certs/privkey.pem:ro \
 	-p 988:988 \
-	-e host_db=st-postgres-container \
+	-e host_db=ai_translate-postgres-container \
 	-e port_db=5432 \
 	-e user_db=postgres \
 	-e password_db=postgres \
@@ -44,18 +44,18 @@ rungo:
 	go run ./cmd
 
 run.db:
-	docker run -d --rm --name ai_translate-container \
-	--network ST-network \
+	docker run -d --rm --name ai_translate-postgres-container \
+	--network ai_translate-network \
 	-e POSTGRES_USER=postgres \
 	-e POSTGRES_PASSWORD=postgres \
 	-e POSTGRES_DB=postgres \
 	-v ./postgres/create.sql:/docker-entrypoint-initdb.d/c \
 	-v ./pgdata:/var/lib/postgresql/data \
-	ai_translate
+	ai_translate-postgres
 
 
 del.db:
-	docker stop ai_translate-container
+	docker stop ai_translate-postgres-container
 	sudo rm -rf ./pgdata
 
 del.app:
