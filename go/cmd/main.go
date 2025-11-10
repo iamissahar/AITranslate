@@ -38,7 +38,7 @@ func (api *API) isDataRelevant(req *Request, ctx *gin.Context, withText bool) bo
 
 	err = ctx.ShouldBindJSON(req)
 	ok = err == nil
-	if ok {
+	if !ok {
 		ctx.Data(http.StatusBadRequest, "application/json", []byte(fmt.Sprintf(app.ERROR_JSON, app.INVALID_PARAMETERS, err.Error())))
 	} else {
 		ok = withText && req.Text != ""
