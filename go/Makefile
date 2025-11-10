@@ -15,7 +15,7 @@ run.app:
 	--network ai_translate-network \
 	-v /etc/letsencrypt/live/nathanissahar.me/fullchain.pem:/certs/fullchain.pem:ro \
   	-v /etc/letsencrypt/live/nathanissahar.me/privkey.pem:/certs/privkey.pem:ro \
-	-p 988:988 \
+	-p 4200:4200 \
 	-e host_db=ai_translate-postgres-container \
 	-e port_db=5432 \
 	-e user_db=postgres \
