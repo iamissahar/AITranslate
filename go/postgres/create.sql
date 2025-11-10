@@ -31,3 +31,17 @@ CREATE TABLE Relations (
         REFERENCES Content(response_id, id)
         ON DELETE CASCADE
 );
+
+CREATE TABLE UsersV2 (
+    id SERIAL PRIMARY KEY,
+    last_time_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    used INT DEFAULT 0 NOT NULL,
+    language VARCHAR(10) DEFAULT '' NOT NULL,
+    is_chosen INT DEFAULT 0 NOT NULL
+);
+
+CREATE TABLE ResponsesV2 (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES UsersV2(id) ON DELETE CASCADE,
+    payload TEXT DEFAULT '' NOT NULL
+);

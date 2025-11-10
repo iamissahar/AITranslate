@@ -1,38 +1,112 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="../styles/popup.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-</head>
-<body>
-  <div id="translation_window" class="window">
-    <div class="window-header">
-      <div class="icon-name-holder">
-        <img class="window-img" src="../icons/another_small_logo (1).png">
-        <span class="window-title">AI Translate</span>
-      </div>    
-      <button class="copy-btn" id="copy_btn" onclick="copyText()">
-        <img class="copy-logo" id="copy_logo" src="../icons/icon_copy_black.png">
-        <img class="checkmark-logo" id="checkmark_logo" src="../icons/checkmark_black.png">
-        <p class="btn-text" id="btn_text"> Copy</p>
-      </button>
-    </div>
-    <div class="window-content" id="window_content">
-      <img class="error-img" id="error_img" src="../icons/error.png">
-      Translating
-    </div>
-  </div>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" href="../styles/popup.css" />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
+            rel="stylesheet"
+        />
+    </head>
+    <body>
 
-  <div id="hidden_holder">
-    <div id="hidden_headers">
-        <img id="hidden_img" class="window-img" src="../icons/another_small_logo (1).png">
-        <span id="hidden_title" class="window-title">AI Translate</span>
-    </div>
-    <div id="hidden_text_container"></div>
-  </div>
+        <div id="translation-popup" class="popup">
+            <div class="main-header">
+                <div class="logo-title">
+                    <img src="../icons/small_logo.png">
+                    <div class="title">AI Translate</div>
+                </div>
+                <div id="settings" class="settings">
+                    <img src="../icons/settings.png"
+                </div>
+            </div>
+        </div>
+            <div id="holder" class="holder">
+                <div id="secondary-header" class="secondary-header">
+                    <div class="header-title">Translate to:</div>
+                    <div class="language-selector">
+                        <select id="translate_to_dropdown">
+                            <option value="" disabled>
+                                Select your language
+                            </option>
+                        </select>
+                    </div>
+                </div>
+                <div class="container">
+                    <textarea id="input" class="input placeholder">Type your text here...</textarea>
+                    <div id="input_delete" class="action-btn delete">
+                        <img src="../icons/delete.png" alt="">
+                    </div>
+                    <div id="input_copy" class="action-btn copy">
+                        <img src="../icons/icon_copy_black.png" alt="">
+                    </div>
+                </div>
 
-  <script type="module" src="../js/popup.js"></script>
-</body>
+                <div class="res">Result:</div>
+
+                <div class="container">
+                    <div id="output" class="output">
+                        <div id="status_content" class="status-content">
+                            <div class="status-message" id="status_message">
+                                Translating
+                            </div>
+                        </div>
+                    </div>
+                    <div id="output_delete" class="action-btn delete">
+                        <img src="../icons/delete.png" alt="">
+                    </div>
+                    <div id="output_copy" class="action-btn copy">
+                        <img src="../icons/icon_copy_black.png" alt="">
+                    </div>
+                </div>
+                <div id="send_btn" class="send">Send</div>
+            </div>
+
+            <div id="settings_slide" class="settings-slide">
+                <div class="settings-header">
+                <button id="back_btn" class="back-btn">
+                    <img src="../icons/back.png">
+                </button>
+                <div class="slide-title">Settings</div>
+            </div>
+
+            <div class="settings-option">
+                <span>Enable inline button</span>
+                <label class="switch">
+                    <input type="checkbox" id="inline_switch" checked />
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="settings-option">
+                <span>Enable context menu</span>
+                <label class="switch">
+                    <input type="checkbox" id="context_switch" checked />
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+
+            <div class="settings-option">
+                <label for="language-select">Target language:</label>
+                <select id="settings_dropdown">
+                    <option value="" disabled>
+                        Select your language
+                    </option>
+                </select>
+            </div>
+
+            <div class="settings-actions">
+                <button id="save_settings" class="save-btn">Save Settings</button>
+            </div>
+            <div id="status_change" class="status"></div>
+        </div>
+        <script src="../js/output.js"></script>
+        <script src="../js/translate.js"></script>
+        <script src="../js/queue.js"></script>
+        <script src="../js/stream.js"></script>
+        <script src="../js/request.js"></script>
+        <script src="../js/popup/popup.js"></script>
+    </body>
 </html>

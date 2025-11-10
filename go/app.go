@@ -12,8 +12,24 @@ import (
 	"strings"
 	"time"
 
+	"github.com/iamissahar/AITranslate/storage"
 	_ "github.com/lib/pq"
 	"gopkg.in/gomail.v2"
+)
+
+const (
+	DEFAULT_JSON_WITH_STREAM         string = "{\"model\": %q, \"messages\": [{\"role\": \"developer\", \"content\": %q}, {\"role\": \"user\", \"content\": %q}], \"stream\": true, \"temperature\": 0.04}"
+	DEFAULT_JSON_WITHOUT_STREAM      string = "{\"model\": %q, \"messages\": [{\"role\": \"developer\", \"content\": %q}, {\"role\": \"user\", \"content\": %q}]}"
+	DEFAULT_OK_STREAM_CHUNK          string = "{\"ok\": true, \"result\": {\"user_id\": %d, \"text\": %q}}"
+	DEFAULT_NOTOK_STREAM_CHUNK       string = "{\"ok\": true, \"result\": {\"user_id\": %d, \"finish_reason\": %q}}"
+	DEFAULT_STREAM_ERROR             string = "{\"ok\": false, \"result\": {\"user_id\": %d, \"error\": \"Open AI has responsed in an unexpected way.\"}}"
+	DEFAULT_ERROR                    string = "{\"ok\": false, \"result\": {\"user_id\": %d, \"code\": %q, \"error\": %q}}"
+	DEFAULT_SUCCESS_JSON             string = "{\"ok\": true, \"result\": {\"user_id\": %d, \"status\": \"done\"}}"
+	DEFAULT_SUCCESS_JSON_TRANSLATION string = "{\"ok\": true, \"result\": {\"user_id\": %d, \"text\": %q}}"
+	COMPLETE_ACTION_JSON             string = "{\"id\": %q, \"object\": %q, \"created\" %d, \"model\": %q, \"finish_reason\": %q, \"text\": %q}"
+	INTERNAL_SERVER_ERROR            string = "something went wrong on the service's side"
+	JSON_PROMPT_PATH                 string = "json_prompt.txt"
+	TRANSLATE_PROMPT_PATH            string = "translate_prompt.txt"
 )
 
 func errorHandler(userID, errid int, f string, err error) {
@@ -85,8 +101,8 @@ func updateDB(userID int, cs *CompleteStream) {
 		defer endTransaction(userID, tx, &goback)
 
 		_, err = tx.Exec(`
-			INSERT INTO Responses 
-			(id, time_creation, model) 
+			INSERT INTO Responses
+			(id, time_creation, model)
 			VALUES ($1, $2, $3)`,
 			cs.ID, time.Unix(cs.Created, 0), cs.Model)
 
@@ -101,8 +117,8 @@ func updateDB(userID int, cs *CompleteStream) {
 			} else {
 
 				_, err = tx.Exec(`
-				INSERT INTO Content 
-				(id, response_id, object, text, finish_reason) 
+				INSERT INTO Content
+				(id, response_id, object, text, finish_reason)
 				VALUES ($1, $2, $3, $4, $5)`,
 					contentid, cs.ID, cs.Object, cs.Text, cs.FinishReason)
 
@@ -112,8 +128,8 @@ func updateDB(userID int, cs *CompleteStream) {
 				} else {
 
 					_, err = tx.Exec(`
-					INSERT INTO Relations 
-					(user_id, response_id, content_id) 
+					INSERT INTO Relations
+					(user_id, response_id, content_id)
 					VALUES ($1, $2, $3)`,
 						userID, cs.ID, contentid)
 
@@ -362,8 +378,8 @@ func streamWithOpenAI(r *Request) {
 	l := Languages[r.Lang]
 	p := fmt.Sprintf(promtV1, l[0], l[0])
 	openai := &OpenAIReq{
-		Model: l[1],
-		Messages: []*message{{Role: "developer", Content: p},{Role: "user", Content: r.Text}},
+		Model:       l[1],
+		Messages:    []*message{{Role: "developer", Content: p}, {Role: "user", Content: r.Text}},
 		Stream:      true,
 		Temperature: 0.4,
 	}
@@ -412,4 +428,197 @@ func ChangeLanguage(req *Request, ip string) error {
 		fmt.Printf("[DEBUG] user's {%d} language {%s} has been successfuly changed\n", req.UserID, req.Lang)
 	}
 	return err
+}
+
+// new
+func getPayload(lang, text, path string) ([]byte, error) {
+	var (
+		f         *os.File
+		filebytes []byte
+		payload   []byte
+		err       error
+	)
+	f, err = os.Open(path)
+	if err == nil {
+		filebytes, err = io.ReadAll(f)
+		if err == nil {
+			if path != JSON_PROMPT_PATH {
+				payload = []byte(fmt.Sprintf(
+					DEFAULT_JSON_WITH_STREAM,
+					Languages[lang][1],
+					fmt.Sprintf(string(filebytes), Languages[lang][0]),
+					text),
+				)
+			} else {
+				payload = []byte(fmt.Sprintf(
+					DEFAULT_JSON_WITHOUT_STREAM,
+					Languages[lang][1],
+					fmt.Sprintf(string(filebytes), Languages[lang][0]),
+					text,
+				))
+			}
+		}
+	}
+
+	if f != nil {
+		_ = f.Close()
+	}
+	return payload, err
+}
+
+func requestAI(payload []byte) (*http.Response, error) {
+	var (
+		rq  *http.Request
+		rs  *http.Response
+		cl  http.Client
+		err error
+	)
+	rq, err = http.NewRequest(http.MethodPost, url, bytes.NewBuffer(payload))
+	rq.Header.Add("Content-Type", "application/json")
+	rq.Header.Add("Authorization", "Bearer "+authkey)
+	if err == nil {
+		rs, err = cl.Do(rq)
+	}
+	return rs, err
+}
+
+func saveStreamData(chunk *StreamChunk, cs *CompleteStream) {
+	if cs.ID == "" && chunk.ID != "" {
+		cs.ID = chunk.ID
+	}
+	if cs.Created == 0 && chunk.Created != 0 {
+		cs.Created = chunk.Created
+	}
+	if cs.Model == "" && chunk.Model != "" {
+		cs.Model = chunk.Model
+	}
+	if cs.Object == "" && chunk.Object != "" {
+		cs.Object = chunk.Object
+	}
+}
+
+func (str *Streamer) handleResponse(rs *http.Response, userID int) {
+	var (
+		reader *bufio.Reader
+		line   []byte
+		err    error
+		data   string
+		chunk  *StreamChunk
+		choice *choiceV1
+		isDone bool
+		cs     = new(CompleteStream)
+	)
+	reader = bufio.NewReader(rs.Body)
+	for !isDone {
+		line, err = reader.ReadBytes('\n')
+		if err != nil {
+			if err != io.EOF {
+				isDone = true
+			}
+		} else {
+			if strings.HasPrefix(string(line), "data: ") {
+				data = strings.TrimPrefix(string(line), "data: ")
+				if len(data) > 6 && data[:6] == "[DONE]" {
+					isDone = true
+					str.s.UpdateDB(userID, fmt.Sprintf(COMPLETE_ACTION_JSON, cs.ID, cs.Object, int(cs.Created), cs.Model, "done", cs.Text))
+				} else {
+					chunk = new(StreamChunk)
+					err = json.Unmarshal([]byte(data), chunk)
+					if err == nil {
+						saveStreamData(chunk, cs)
+						for _, choice = range chunk.Choices {
+							if choice != nil && choice.Delta != nil && choice.Delta.Content != "" && choice.FinishReason == nil {
+								cs.Text += choice.Delta.Content
+								str.ch <- fmt.Sprintf(DEFAULT_OK_STREAM_CHUNK, userID, choice.Delta.Content)
+							} else if choice.FinishReason != nil {
+								str.ch <- fmt.Sprintf(DEFAULT_NOTOK_STREAM_CHUNK, userID, *choice.FinishReason)
+							}
+						}
+					}
+				}
+			} else {
+				str.ch <- fmt.Sprintf(DEFAULT_STREAM_ERROR, userID)
+			}
+		}
+	}
+
+	_ = rs.Body.Close()
+}
+
+func (js *Jsoner) handleResponse(rs *http.Response, userID int) string {
+	var (
+		op  = new(OpenAI)
+		tr  TranslationResponse
+		res string
+		err error
+	)
+	err = json.NewDecoder(rs.Body).Decode(op)
+	if err == nil {
+		if len(op.Choices) > 0 && op.Choices[0].Message != nil {
+			err = json.Unmarshal([]byte(op.Choices[0].Message.Content), &tr)
+			if err == nil {
+				js.s.UpdateDB(userID, fmt.Sprintf(COMPLETE_ACTION_JSON, op.ID, op.Object, int(op.Created), op.Model, "done", op.Choices[0].Message.Content))
+				res = fmt.Sprintf(DEFAULT_SUCCESS_JSON_TRANSLATION, userID, op.Choices[0].Message.Content)
+			} else {
+				res = fmt.Sprintf(DEFAULT_ERROR, userID, "unable_to_unmarshal_json", err.Error())
+			}
+		} else {
+			res = fmt.Sprintf(DEFAULT_ERROR, userID, "invalid_response", "Open AI response is invalid")
+		}
+	} else {
+		res = fmt.Sprintf(DEFAULT_ERROR, userID, "unable_to_unmarshal_json", err.Error())
+	}
+
+	_ = rs.Body.Close()
+	return res
+}
+
+func CheckUserData(s *storage.Storage, userID int, lang string) {
+	if s.IsNewUser(userID) {
+		s.NewUser(lang)
+	} else {
+		s.UpdateUserData(userID, lang)
+	}
+}
+
+func (str *Streamer) Init(ch chan string, s *storage.Storage) {
+	str.ch = ch
+	str.s = s
+}
+
+func (str *Streamer) Do(userID int, lang, text string) (string, error) {
+	var (
+		payload []byte
+		rs      *http.Response
+		err     error
+	)
+	payload, err = getPayload(lang, text, TRANSLATE_PROMPT_PATH)
+	if err == nil {
+		rs, err = requestAI(payload)
+		if err == nil {
+			str.handleResponse(rs, userID)
+		}
+	}
+	if err != nil {
+		str.ch <- fmt.Sprintf(DEFAULT_ERROR, userID, INTERNAL_SERVER_ERROR, err.Error())
+	}
+	close(str.ch)
+	return "", nil
+}
+
+func (js *Jsoner) Do(userID int, lang, text string) (string, error) {
+	var (
+		payload []byte
+		rs      *http.Response
+		res     string
+		err     error
+	)
+	payload, err = getPayload(lang, text, JSON_PROMPT_PATH)
+	if err == nil {
+		rs, err = requestAI(payload)
+		if err == nil {
+			res = js.handleResponse(rs, userID)
+		}
+	}
+	return res, err
 }

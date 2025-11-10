@@ -3,6 +3,8 @@ package app
 import (
 	"database/sql"
 	"os"
+
+	"github.com/iamissahar/AITranslate/storage"
 )
 
 const (
@@ -44,21 +46,36 @@ Before outputting, double-check:
 - Output must be only valid JSON, without any explanation or extra text.
 If any rule is broken — fix it automatically before sending.`
 
-	url          string = "https://api.openai.com/v1/chat/completions"
-	model        string = "gpt-3.5-turbo"
-	response     string = "response"
-	database     string = "database"
-	golang       string = "golang"
-	partOfSpeech string = "^**_**^"
-	context      string = "*^*_*^*"
-	definition   string = "^^^_^^^"
-	example      string = "**&_&**"
+	url                string = "https://api.openai.com/v1/chat/completions"
+	model              string = "gpt-3.5-turbo"
+	response           string = "response"
+	database           string = "database"
+	golang             string = "golang"
+	partOfSpeech       string = "^**_**^"
+	context            string = "*^*_*^*"
+	definition         string = "^^^_^^^"
+	example            string = "**&_&**"
+	INVALID_PARAMETERS string = "invalid_parameters"
+	ERROR_JSON         string = "{\"ok\": false, \"result\": {\"code\": %q, \"error\": %q}}"
 )
 
 var (
 	authkey = os.Getenv("OPENAI_API_KEY")
 	Db      *sql.DB
 )
+
+type Translator interface {
+	Do(userID int, lang, text string) (string, error)
+}
+
+type Streamer struct {
+	ch chan string
+	s  *storage.Storage
+}
+
+type Jsoner struct {
+	s *storage.Storage
+}
 
 type Request struct {
 	UserID   int    `json:"user_id"`

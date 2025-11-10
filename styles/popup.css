@@ -1,210 +1,340 @@
-* {
-    all: unset;
+/* Общие стили */
+body {
+    margin: 0;
+    padding: 10px;
+    font-family: "Inter", sans-serif;
+    background-color: #f9fafb;
+    color: #111827;
 }
 
-.window {
-    display: none;
-    position: fixed;
-    width: 400px;
-    max-height: 100vh; 
-    background-color: #f8f8f8;
-    color: rgb(13, 13, 13);
-    border: 2px solid #787878;
-    border-radius: 8px;
-    z-index: 9999;
-    max-width: 95%;
-    flex-direction: column; 
+/* Popup */
+.popup {
+    width: 480px;
+    background-color: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    box-sizing: border-box;
 }
 
-.window-header {
+/* Заголовок */
+.main-header {
     display: flex;
-    height: 25px;
     justify-content: space-between;
     align-items: center;
-    padding: 1% 4%;
-    background-color: #c6c6c6;
-    color: #0d0d0d;
-    border-bottom: 2px solid #acacac;
-
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
-
-    flex-shrink: 0;
+    margin-bottom: 20px;
 }
 
-.icon-name-holder {
+.logo-title {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
 }
 
-.window-title {
-    font-family: 'Inter', sans-serif;
-    font-size: 18px;
+.logo-title img {
+    width: 28px;
+    height: 28px;
+}
+
+.title {
     font-weight: 600;
+    font-size: 18px;
 }
 
-.copy-btn {
-    display: none;
+/* Настройки */
+.settings img {
+    width: 26px;
+    height: 26px;
+    cursor: pointer;
+}
+
+/* Селекторы */
+.secondary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.header-title {
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.language-selector select,
+.settings-option select {
+    padding: 6px 12px;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    font-size: 14px;
+    background-color: #f3f4f6;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.language-selector select:hover,
+.settings-option select:hover {
+    border-color: #4f46e5;
+}
+
+/* Текстовые поля */
+.container {
+    position: relative;
+    margin-bottom: 15px;
+}
+
+.input,
+.output {
+    font-family: "Inter", sans-serif;
+    width: 100%;
+    min-height: 80px;
+    padding: 10px 50px 10px 12px;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    background-color: #f3f4f6;
+    font-size: 14px;
+    resize: none;
+    box-sizing: border-box;
+    transition:
+        border-color 0.2s,
+        box-shadow 0.2s;
+}
+
+.input:focus {
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: 0 0 6px rgba(79, 70, 229, 0.3);
+}
+
+.placeholder {
+    color: #9ca3af;
+    font-style: italic;
+}
+
+/* Action buttons */
+.action-btn {
+    position: absolute;
+    top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    color: #374151;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.action-btn.show {
+    opacity: 1;
+}
+
+.delete {
+    right: 17px;
+    top: 50px;
+}
+
+.copy {
+    right: 17px;
+}
+
+.action-btn img {
+    width: 20px;
+    height: 20px;
+}
+
+/* Send button */
+.send {
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 3px;
-
-    background-color: #c6c6c6;
+    width: 70px;
+    height: 32px;
+    background-color: #4f46e5;
+    color: #ffffff;
+    font-weight: 500;
+    border-radius: 16px;
     border: none;
-    padding: 5px 0px 5px 15px;
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: all 0.2s;
+    user-select: none;
+    margin-left: auto;
 }
 
-.copy-btn p {
-    margin: 0;
-    color: #0d0d0d;
-    font-size: 12px; 
+.send:hover {
+    background-color: #4338ca;
+    transform: translateY(-1px);
 }
 
-.copy-logo {
-    width: 12px;
-    height: 12px;
-    transform: rotateX(0deg);
+.send:active {
+    transform: scale(0.96);
 }
 
-.checkmark-logo {
+.status-content {
     display: none;
-    width: 12px;
-    height: 12px;
+    background: none;
 }
 
-
-.window-content {
-    padding: 3% 4%;
-    font-family: 'Inter', sans-serif;
-    font-size: 16px;
-    line-height: 1.5;
-    word-wrap: break-word; 
-    background: linear-gradient(
-        90deg,
-        #0d0d0d 0%,
-        #c0c0c0 30%,
-        #0d0d0d 60%
-    );
-    background-size: 200%;
-    background-clip: text;
-    -webkit-background-clip: text;
+.status-message {
+    font-style: italic;
+    font-size: 14px;
     color: transparent;
-    animation: shimmer 1.8s infinite ease-in-out;
-    height: 100%;
-}
-
-.window-content::-webkit-scrollbar {
-    width: 8px;
-}
-
-.window-content::-webkit-scrollbar-thumb {
-    background: #888;
-}
-
-.window-content::-webkit-scrollbar-track {
-    background: #f8f8f8;
-}
-
-.error-img {
-    display: none;
-    width: 17px;
-    height: 17px;
-    vertical-align: middle;
-    margin-right: 8px;
-}
-
-.error-img {
-    display: none;
-    width: 17px;
-    height: 17px;
+    background: linear-gradient(90deg, #b5bbc6 25%, #000000 50%, #bdc6d8 75%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    animation: shimmer 1.5s linear infinite;
 }
 
 @keyframes shimmer {
     0% {
-        background-position: -100% 0;
+        background-position: -200% 0;
     }
     100% {
-        background-position: 100% 0;
+        background-position: 200% 0;
     }
 }
-
-.window-position {
+/* Settings slide */
+.settings-slide {
     position: absolute;
     top: 0;
-    left: 0;
-}
-
-.something_1 {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-}
-
-.something_2 {
-    position: absolute;
-    top: 0;
-    right: 0;
-}
-
-.something_3 {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-}
-
-.something_4 {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-}
-
-#hidden_holder {
-    visibility: hidden;
+    left: 100%;
+    width: 100%;
+    height: 100%;
+    background-color: #ffffff;
+    border-radius: 16px;
+    padding: 20px;
+    box-sizing: border-box;
+    transition: left 0.3s ease-in-out;
     display: flex;
-    position: fixed;
-    width: 400px;
-    background-color: #f8f8f8;
-    color: rgb(13, 13, 13);
-    border: 2px solid #787878;
-    border-radius: 8px;
-    z-index: 9999;
-    max-width: 95%;
-    flex-direction: column; 
+    flex-direction: column;
+    gap: 20px; /* отступы между блоками */
 }
 
-#hidden_text_container {
-    visibility: hidden;
-    padding: 3% 4%;
-    font-family: 'Inter', sans-serif;
-    font-size: 16px;
-    line-height: 1.5;
-    word-wrap: break-word; 
+.settings-slide.active {
+    left: 0;
 }
 
-#hidden_headers {
-    visibility: hidden;
+/* Заголовок слайда */
+.settings-header {
     display: flex;
-    height: 25px;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+}
+
+.back-btn {
+    border: none;
+    background: none;
+    font-size: 14px;
+    cursor: pointer;
+    color: #111827;
+    padding: 4px;
+}
+
+.back-btn img {
+    width: 20px;
+    height: 20px;
+}
+
+/* Заголовок текста слайда */
+.slide-title {
+    font-weight: 600;
+    font-size: 18px;
+}
+
+/* Опции настроек */
+.settings-option {
+    display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1% 4%;
-    background-color: #c6c6c6;
-    color: #0d0d0d;
-    border-bottom: 2px solid #acacac;
-
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
-
-    flex-shrink: 0;
+    gap: 10px;
 }
 
-#hidden_img {
-    visibility: hidden;
+.settings-option span,
+.settings-option label {
+    font-size: 14px;
+    color: #111827;
 }
 
-#hidden_title {
-    visibility: hidden;
+/* Селект в настройках */
+.settings-option select {
+    padding: 6px 12px;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    font-size: 14px;
+    background-color: #f3f4f6;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.settings-option select:hover {
+    border-color: #4f46e5;
+}
+
+/* Переключатели */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #e5e7eb;
+    border-radius: 24px;
+    transition: all 0.3s;
+}
+
+.slider::before {
+    content: "";
+    position: absolute;
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    border-radius: 50%;
+    transition: transform 0.3s;
+}
+
+input:checked + .slider {
+    background-color: #4f46e5;
+}
+
+input:checked + .slider::before {
+    transform: translateX(20px);
+}
+
+/* Кнопка сохранения */
+.settings-actions {
+    margin-top: auto; /* прижимает кнопку к низу */
+}
+
+.save-btn {
+    width: 100%;
+    height: 36px;
+    border-radius: 12px;
+    background-color: #4f46e5;
+    color: #ffffff;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.save-btn:hover {
+    background-color: #4338ca;
 }

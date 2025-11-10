@@ -1,208 +1,124 @@
 package main
 
 import (
-	"database/sql"
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
-	"os"
-	"regexp"
 
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	app "github.com/iamissahar/AITranslate"
+	"github.com/iamissahar/AITranslate/storage"
 )
 
-func approveRequest(ctx *gin.Context, withText bool) (*app.Request, bool) {
-	req := new(app.Request)
-	err := ctx.ShouldBindJSON(req)
-	if err != nil {
-		fmt.Println("[DEBUG] input data invalid. can't recognize the json data from request")
-		ctx.Header("Content-Type", "application/json")
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+type API struct {
+	s *storage.Storage
+}
+
+type Request struct {
+	UserID int    `json:"user_id"`
+	Lang   string `json:"lang_code"`
+	Text   string `json:"text"`
+}
+
+type event struct {
+	ch  chan string
+	ctx *gin.Context
+}
+
+func (api *API) Init(s *storage.Storage) {
+	api.s = s
+}
+
+func (api *API) isDataRelevant(req *Request, ctx *gin.Context, withText bool) bool {
+	var (
+		ok  bool = true
+		err error
+	)
+
+	err = ctx.ShouldBindJSON(req)
+	ok = err == nil
+	if ok {
+		ctx.Data(http.StatusBadRequest, "application/json", []byte(fmt.Sprintf(app.ERROR_JSON, app.INVALID_PARAMETERS, err.Error())))
 	} else {
-		if withText {
-			if req.Text == "" {
-				fmt.Println("[DEBUG] input data invalid. text has to be not empty")
-				ctx.Header("Content-Type", "application/json")
-				ctx.JSON(http.StatusBadRequest, gin.H{"error": "not enough parameters. text parameter is required"})
-				return nil, false
-			}
+		ok = withText && req.Text != ""
+		if !ok {
+			ctx.Data(http.StatusBadRequest, "application/json", []byte(fmt.Sprintf(app.ERROR_JSON, app.INVALID_PARAMETERS, "'text' parameter is required")))
 		}
 
-		if _, ok := app.Languages[req.Lang]; !ok {
-			fmt.Println("[DEBUG] input data invalid. lang_code has to be in the variable Languages")
-			ctx.Header("Content-Type", "application/json")
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "not enough parameters. lang_code parameter is required"})
+		if ok {
+			_, ok = app.Languages[req.Lang]
+			if !ok {
+				ctx.Data(http.StatusBadRequest, "application/json", []byte(fmt.Sprintf(app.ERROR_JSON, app.INVALID_PARAMETERS, "'lang_code' parameter is required")))
+			}
 		}
 	}
-	return req, err == nil
+	return ok
 }
 
-func oneWord(router *gin.Engine) {
-	router.POST("/translate/one_word", func(ctx *gin.Context) {
-		if req, ok := approveRequest(ctx, true); ok {
-
-			fmt.Println("[DEBUG] server has caught a request to translate one word")
-			ctx.Header("Content-Type", "application/json")
-
-			tr, err := app.OneWord(req, ctx.ClientIP())
-			if err == nil {
-				fmt.Println("[DEBUG] everything was OK. Server has got response from OpenAI and ready to send it to the client")
-				ctx.JSON(http.StatusOK, gin.H{"user_id": req.UserID, "content": tr})
-			} else {
-				msg := err.Error()
-				fmt.Println("[DEBUG] got an error during the server's process: ", msg)
-				ctx.JSON(http.StatusBadRequest, gin.H{"description": "something went wrong on the server's side", "error": msg})
-			}
-		}
-	})
-}
-
-func stream(router *gin.Engine) {
-	router.POST("/translate/phrase", func(ctx *gin.Context) {
-		if req, ok := approveRequest(ctx, true); ok {
-
-			fmt.Println("[DEBUG] server's stream begins")
-			req.Stream = make(chan *app.Response)
-			go app.Stream(req, ctx.ClientIP())
-
-			ctx.Header("Content-Type", "text/event-stream")
-			ctx.Header("Cache-Control", "no-cache")
-			ctx.Header("Connection", "keep-alive")
-			ctx.Stream(func(w io.Writer) bool {
-				var (
-					peace *app.Response
-					ok    bool
-				)
-				if peace, ok = <-req.Stream; ok {
-					ctx.SSEvent("data", peace)
-				} else {
-					re := regexp.MustCompile(`\s+`)
-					clean := re.ReplaceAllString(*req.FinalRes, " ")
-					ctx.SSEvent("final_data", gin.H{"user_id": req.UserID, "final_text": clean})
-					fmt.Println("[DEBUG] server's stream ends")
-				}
-				return ok
-			})
-		}
-	})
-}
-
-func changeTheLanguage(router *gin.Engine) {
-	router.PATCH("/change_language", func(ctx *gin.Context) {
-		var err error
-		req := new(app.Request)
-		if err = ctx.ShouldBindJSON(req); err != nil {
-			fmt.Println("[DEBUG] input data invalid")
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		}
-		if _, ok := app.Languages[req.Lang]; !ok {
-			fmt.Println("[DEBUG] language code invalid")
-			ctx.JSON(http.StatusBadRequest, gin.H{"code": "invalid input parameters", "error": "not enough parameters. lang_code isn't supported"})
+func (e *event) step(w io.Writer) bool {
+	var (
+		chunk string
+		ok    bool
+	)
+	if chunk, ok = <-e.ch; ok {
+		if bytes.HasPrefix([]byte(chunk), []byte("{\"ok\": false,")) {
+			e.ctx.Data(http.StatusInternalServerError, "application/json", []byte(chunk))
 		} else {
-			if err = app.ChangeLanguage(req, ctx.ClientIP()); err != nil {
-				fmt.Println("[DEBUG] server's error")
-				ctx.JSON(http.StatusBadRequest, gin.H{"code": "server error", "error": err.Error()})
-			} else {
-				fmt.Println("[DEBUG] server's response has been successfuly created and ready to be sent")
-				ctx.JSON(http.StatusOK, gin.H{"user_id": req.UserID, "message": "the langauge has been changed"})
-			}
+			fmt.Println("\033[34m[DEBUG]\033[0m sending chunk to client")
+			e.ctx.SSEvent("data", chunk)
 		}
-	})
+	}
+	return ok
 }
 
-// func stream(router *gin.Engine) {
-// 	router.POST("/translate", func(ctx *gin.Context) {
-// 		var (
-// 			err error
-// 			req = new(app.Request)
-// 		)
-// 		if err = ctx.ShouldBindJSON(req); err != nil {
-// 			fmt.Println("[DEBUG] input data invalid")
-// 			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-// 		}
-
-// 		if _, ok := app.Languages[req.Lang]; ok && req.Text != "" && err == nil {
-// 			fmt.Println("[DEBUG] server's stream begins")
-// 			req.Stream = make(chan *app.Response)
-// 			go app.Mainlogic(req, ctx.ClientIP())
-
-// 			ctx.Stream(func(w io.Writer) bool {
-// 				var (
-// 					peace *app.Response
-// 					js    *app.OneWordResponse
-// 					ok    bool
-// 				)
-
-// 				go func() {
-// 					ctx.Header("Content-Type", "text/event-stream")
-// 					ctx.Header("Cache-Control", "no-cache")
-// 					ctx.Header("Connection", "keep-alive")
-// 					if peace, ok = <-req.Stream; ok {
-// 						ctx.SSEvent("data", peace)
-// 					} else {
-// 						if req.FinalRes != nil && *(req).FinalRes != "" {
-// 							ctx.SSEvent("final_data", gin.H{"user_id": req.UserID, "final_text": req.FinalRes})
-// 							fmt.Println("[DEBUG] server's stream ends")
-// 						}
-// 					}
-// 				}()
-
-// 				func() {
-// 					ctx.Header("Content-Type", "application/json")
-// 					if js, ok = <-req.OneWord; ok {
-// 						ctx.JSON(http.StatusOK, js)
-// 					}
-// 				}()
-
-// 				return ok
-// 			})
-
-// 		} else if err == nil {
-// 			fmt.Println("[DEBUG] input data invalid. lang_code has to be in the variable Languages. Text has to be not empty")
-// 			ctx.JSON(http.StatusBadRequest, gin.H{"error": "not enough parameters. has to be language code, text and user id"})
-// 		}
-// 	})
-// }
-
-func startAPI() {
-	router := gin.Default()
-	router.Use(cors.New(cors.Config{
-		AllowOriginFunc: func(origin string) bool {
-			fmt.Println(">> Origin:", origin)
-			return origin == "chrome-extension://fplemnpbglnainedjaimekcgdkikkafc" || origin == "chrome-extension://blcdghlkkelnjabklhgoenenkefifoeo"
-		},
-		AllowMethods:     []string{"GET", "POST", "PATCH", "OPTIONS"},
-		AllowHeaders:     []string{"Content-Type", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: false,
-		MaxAge:           12 * 3600,
-	}))
-	stream(router)
-	changeTheLanguage(router)
-	oneWord(router)
-	err := router.RunTLS(":443", "/certs/fullchain.pem", "/certs/privkey.pem")
-	if err != nil {
-		panic(err)
+func (api *API) begin(req *Request, trsl app.Translator, ctx *gin.Context, e *event) {
+	var (
+		res  string
+		code int
+		err  error
+	)
+	if api.isDataRelevant(req, ctx, true) {
+		if e != nil {
+			go trsl.Do(req.UserID, req.Lang, req.Text)
+			ctx.Stream(e.step)
+		} else {
+			res, err = trsl.Do(req.UserID, req.Lang, req.Text)
+			if err != nil {
+				code = http.StatusInternalServerError
+			} else {
+				code = http.StatusOK
+			}
+			ctx.Data(code, "application/json", []byte(res))
+		}
 	}
 }
 
-func main() {
-	startAPI()
+func (api *API) getStream(ctx *gin.Context) {
+	var (
+		req      = new(Request)
+		streamer = new(app.Streamer)
+		e        = new(event)
+	)
+	e.ch = make(chan string)
+	e.ctx = ctx
+	streamer.Init(e.ch, api.s)
+	api.begin(req, streamer, ctx, e)
 }
 
-func init() {
-	var err error
-	psqlconn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		os.Getenv("host_db"), os.Getenv("port_db"), os.Getenv("user_db"),
-		os.Getenv("password_db"), os.Getenv("dbname_db"), os.Getenv("sslmode_db"))
-	app.Db, err = sql.Open("postgres", psqlconn)
-	if err != nil {
-		panic(err)
-	}
+func (api *API) getJson(ctx *gin.Context) {
+	var (
+		req    = new(Request)
+		jsoner = new(app.Jsoner)
+	)
+	api.begin(req, jsoner, ctx, nil)
+}
 
-	if err = app.Db.Ping(); err != nil {
-		panic(err)
+func (api *API) changeLanguage(ctx *gin.Context) {
+	var req = new(Request)
+	if api.isDataRelevant(req, ctx, false) {
+		app.CheckUserData(api.s, req.UserID, req.Lang)
+		api.s.ChangeLanguage(req.UserID, req.Lang)
+		ctx.Data(http.StatusOK, "application/json", []byte(fmt.Sprintf(app.DEFAULT_SUCCESS_JSON, req.UserID)))
 	}
 }

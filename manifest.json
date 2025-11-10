@@ -1,41 +1,56 @@
 {
   "manifest_version": 3,
-  "name": "AI Translation",
+  "name": "AI Translate: Get a High Quality Translation Powered by ChatGPT",
   "description": "Understand any language instantly with AI Translation — a lightweight, one-click extension powered by ChatGPT.",
-  "version": "0.1.1",
-  "permissions": ["activeTab", "storage", "contextMenus"],
+  "version": "0.1.4",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "contextMenus",
+    "clipboardWrite",
+    "clipboardRead",
+    "offscreen",
+    "scripting",
+    "webNavigation"
+  ],
   "background": {
     "service_worker": "js/background.js",
     "type": "module"
   },
   "icons": {
     "16": "icons/menu_logo.png",
-    "128": "icons/logo_6.png"
+    "128": "icons/logo_128x128.png"
   },
   "action": {
-    "default_popup": "html/window.html",
+    "default_popup": "html/popup.html",
     "default_icon": {
       "48": "icons/very_small_logo.png",
-      "128": "icons/logo_6.png"
+      "128": "icons/logo_128x128.png"
     }
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["js/content.js", "js/popup.js"]
+      "js": [
+        "js/inline/content.js",
+        "js/inline/selection.js",
+        "js/inline/htmlstyles.js",
+        "js/stream.js"
+      ],
+      "run_at": "document_end",
+      "all_frames": true
+    },
+    {
+      "matches": ["https://docs.google.com/*"],
+      "js": ["js/inline/drive.google.js"],
+      "run_at": "document_end",
+      "all_frames": true
     }
   ],
   "host_permissions": ["https://nathanissahar.me/"],
   "web_accessible_resources": [
     {
-      "resources": [
-        "icons/*", 
-        "fonts/inter/Inter_18pt-Regular.ttf",
-        "fonts/inter/Inter_18pt-SemiBold.ttf",
-        "fonts/inter/Inter_18pt-Bold.ttf",
-        "fonts/inter/Inter_18pt-Black.ttf",
-        "fonts/inter/Inter_18pt-Italic.ttf"
-      ],
+      "resources": ["icons/*", "fonts/inter/*"],
       "matches": ["<all_urls>"]
     }
   ]
