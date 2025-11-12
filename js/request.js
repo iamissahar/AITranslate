@@ -1,3 +1,4 @@
+const REQUEST_NAME = "translate_one_word";
 class RequestJson {
   /**@param {Output} output */
   constructor(output) {
@@ -9,7 +10,7 @@ class RequestJson {
     res = await new Promise(async (resolve) => {
       chrome.runtime.sendMessage(
         {
-          action: "translate_one_word",
+          action: REQUEST_NAME,
           data: {
             user_id: await new Promise((resolve) => {
               chrome.runtime.sendMessage({ action: "get_user_id" }, (res) => {

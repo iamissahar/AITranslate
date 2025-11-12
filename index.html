@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" href="../styles/popup.css" />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
+            rel="stylesheet"
+        />
+    </head>
+    <style>
+        #hidden_holder {
+            top: 0px;
+            left: 0px;
+            visibility: hidden;
+            display: flex;
+            position: absolute;
+            width: 380px;
+            background: #ffffff;
+            color: #111827;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            box-shadow:
+                0 10px 25px -3px rgba(0, 0, 0, 0.1),
+                0 4px 6px -2px rgba(0, 0, 0, 0.05),
+                0 0 0 1px rgba(0, 0, 0, 0.05);
+            z-index: 10000;
+            font-family: "Inter", sans-serif;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            overflow: hidden;
+            max-width: 95%;
+            flex-direction: column;
+        }
+
+        #hidden_text_container {
+            visibility: hidden;
+            padding: 16px;
+            font-family: "Inter", sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #374151;
+            background: #ffffff;
+            word-wrap: break-word;
+        }
+
+        .phrase {
+            visibility: hidden;
+            font-family: "Inter", sans-serif;
+            font-size: 16px;
+        }
+
+        .translation-result {
+            padding: 10px;
+            font-family: "Inter", sans-serif;
+            color: #111827;
+        }
+
+        .translation-result .part-of-speech {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 8px;
+            text-transform: capitalize;
+        }
+
+        .meaning-card {
+            background: #f3f4f6; /* совпадает с output */
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 8px;
+        }
+
+        .meaning-card .context {
+            font-weight: 500;
+            color: #2563eb; /* синий */
+            font-size: 13px;
+        }
+
+        .meaning-card .translation {
+            margin-top: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #16a34a; /* зеленый */
+        }
+
+        .meaning-card .example {
+            margin-top: 6px;
+            font-size: 13px;
+            font-style: italic;
+            color: #6b7280; /* серый */
+        }
+    </style>
+    <body>
+        <div id="hidden_holder">
+            <div id="hidden_text_container">
+                <div class="phrase" id="hidden_phrase">
+                    In general, these little shiftsin the weather can bea nice
+                    reminder to slowdown a bit. Spending sometime outside, even
+                    just foran hour, often helps clearthe head and gives afresh
+                    perspective.If you’re planning togo for a walk, itmight be a
+                    good ideato take a light jacketwith you.It’s still warm
+                    enoughduring the day, but thetemperature tends to drop
+                    oncethe sun sets, especially ifthe wind picks up.If
+                    you’replanning to go for awalk, it might be agood idea to
+                    take alight jacket with you.It’s stillwarm enough during the
+                    day,but the temperature tends todrop once the sun
+                    sets,especially if the wind picksup.
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

@@ -10,6 +10,14 @@ class Stream {
   }
 
   /**
+   * @param {number} ms
+   * @returns {Promise<any>}
+   */
+  #Sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
    * @param {{ value: string }} buffer
    * @param {TextDecoder} decoder
    * @param {Uint8Array} uint8
@@ -91,7 +99,7 @@ class Stream {
    */
   #GetResponse(msg, buffer, decoder, queue) {
     var uint8;
-
+    console.log("[DEBUG] msg:", msg);
     console.assert(
       typeof msg === "object" && msg !== null,
       "msg is not an object",

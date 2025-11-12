@@ -32,19 +32,20 @@
     {
       "matches": ["<all_urls>"],
       "js": [
+        "js/stream.js",
+        "js/output.js",
+        "js/translate.js",
+        "js/queue.js",
+        "js/request.js",
         "js/inline/content.js",
-        "js/inline/selection.js",
-        "js/inline/htmlstyles.js",
-        "js/stream.js"
+        "js/inline/htmlstyles.js"
       ],
-      "run_at": "document_end",
-      "all_frames": true
+      "run_at": "document_end"
     },
     {
       "matches": ["https://docs.google.com/*"],
-      "js": ["js/inline/drive.google.js"],
-      "run_at": "document_end",
-      "all_frames": true
+      "js": ["js/inline/drive.google.js", "js/inline/selection.js"],
+      "run_at": "document_end"
     }
   ],
   "host_permissions": ["https://nathanissahar.me/"],

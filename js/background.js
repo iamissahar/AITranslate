@@ -1,13 +1,71 @@
 const OFFSCREEN_PATH = "html/off_screen.html";
 const DOMAIN = "https://nathanissahar.me";
+const TEST_MESSAGES = [
+  {
+    ok: true,
+    result: {
+      user_id: 13,
+      text: `Yes, the sky looks a bit cloudy today, but according to the forecast the clouds should clear by the evening. Usually, after this kind of weather, the sunset turns out especially beautiful.If you’re planning to go for a walk, it might be a good idea to take a light jacket with you.It’s still warm enough during the day, but the temperature tends to drop once the sun sets, especially if the wind picks up.If you’re planning to go for a walk, it might be a good idea to take a light jacket with you.It’s still warm enough during the day, but the temperature tends to drop once the sun sets, especially if the wind picks up.`,
+    },
+  },
+  {
+    ok: true,
+    result: {
+      user_id: 13,
+      text: `If you’re planning to go for a walk, it might be a good idea to take a light jacket with you.It’s still warm enough during the day, but the temperature tends to drop once the sun sets, especially if the wind picks up.If you’re planning to go for a walk, it might be a good idea to take a light jacket with you.It’s still warm enough during the day, but the temperature tends to drop once the sun sets, especially if the wind picks up.If you’re planning to go for a walk, it might be a good idea to take a light jacket with you.It’s still warm enough during the day, but the temperature tends to drop once the sun sets, especially if the wind picks up.`,
+    },
+  },
+  {
+    ok: true,
+    result: {
+      user_id: 13,
+      text: `By the way, tomorrow’s forecast looks much better — they’re saying it should be sunny almost all day. That could be a great opportunity to plan something outdoors, maybe even a short trip outside the city.If you’re planning to go for a walk, it might be a good idea to take a light jacket with you.It’s still warm enough during the day, but the temperature tends to drop once the sun sets, especially if the wind picks up.If you’re planning to go for a walk, it might be a good idea to take a light jacket with you.It’s still warm enough during the day, but the temperature tends to drop once the sun sets, especially if the wind picks up.`,
+    },
+  },
+  {
+    ok: true,
+    result: {
+      user_id: 13,
+      text: `In general, these little shifts in the weather can be a nice reminder to slow down a bit. Spending some time outside, even just for an hour, often helps clear the head and gives a fresh perspective.If you’re planning to go for a walk, it might be a good idea to take a light jacket with you.It’s still warm enough during the day, but the temperature tends to drop once the sun sets, especially if the wind picks up.If you’re planning to go for a walk, it might be a good idea to take a light jacket with you.It’s still warm enough during the day, but the temperature tends to drop once the sun sets, especially if the wind picks up.`,
+    },
+  },
+];
+const TEST_HTML = [
+  `<div class="translation-result">
+    <div class="part-of-speech">глагол, существительное</div>
+    <div class="meaning-card">
+        <div class="context">Двигаться быстро, перемещаясь на ногах</div>
+        <div class="translation">бежать</div>
+        <div class="example">I run every morning.</div>
+    </div>
+    <div class="meaning-card">
+        <div class="context">Осуществлять управление, руководить</div>
+        <div class="translation">управлять, руководить</div>
+        <div class="example">She runs a small company.</div>
+    </div>
+    <div class="meaning-card">
+        <div class="context">Период показа или действия чего-либо</div>
+        <div class="translation">период, серия, показ</div>
+        <div class="example">The show had a three-year run.</div>
+    </div>
+</div>`,
+  `<div class="translation-result">
+    <div class="part-of-speech">идиома</div>
+    <div class="meaning-card">
+        <div class="context">Пожелание удачи, особенно перед выступлением</div>
+        <div class="translation">ни пуха ни пера</div>
+        <div class="example">Break a leg, you're going to do great!</div>
+    </div>
+</div>`,
+];
 var mainPageID = null;
 var responseFunc = null;
 var controller = null;
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
-    id: "ai_translation",
-    title: "AI Translation",
+    id: "ai_translate",
+    title: "AI Translate",
     contexts: ["selection"],
   });
 
@@ -17,9 +75,9 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 chrome.contextMenus.onClicked.addListener(function (info, tab) {
-  if (info.menuItemId === "ai_translation") {
+  if (info.menuItemId === "ai_translate") {
     console.log("sending message to content.js");
-    mainPageID = tab.id;
+    // mainPageID = tab.id;
     chrome.tabs.sendMessage(tab.id, {
       action: "translate",
       text: info.selectionText,
@@ -54,7 +112,7 @@ async function TranslateAWord(msg, responseF) {
   }
 }
 
-async function changeLanguge(msg, responseF) {
+async function ChangeLanguage(msg, responseF) {
   try {
     const response = await fetch(DOMAIN + "/ai_translate/v2/change_language", {
       method: "PATCH",
@@ -62,7 +120,7 @@ async function changeLanguge(msg, responseF) {
       body: JSON.stringify(msg),
     });
     const data = await response.json();
-    responseF({ ok: true, data: data });
+    responseF(data);
   } catch (err) {
     responseF({ ok: false, error: err.toString() });
   }
@@ -75,9 +133,6 @@ async function changeLanguge(msg, responseF) {
 async function requestResponse(port, msg) {
   try {
     var signal, response, contenttype, reader, line;
-
-    console.log("[DEBUG] msg:", msg);
-    console.log("[DEBUG] port:", port);
 
     controller = new AbortController();
     signal = controller.signal;
@@ -131,9 +186,67 @@ async function requestResponse(port, msg) {
   }
 }
 
+/**
+ * @param {object} msg
+ * @param {number} chunkSize
+ * @returns {ReadableStream<Uint8Array>}
+ */
+function jsonMessageToSSEStream(msg, chunkSize = 5) {
+  const words = msg.result.text.split(" ");
+  let i = 0;
+
+  return new ReadableStream({
+    pull(controller) {
+      if (i < words.length) {
+        const chunkMsg = {
+          ...msg,
+          result: {
+            ...msg.result,
+            text: words.slice(i, i + chunkSize).join(" "),
+          },
+        };
+
+        const sseChunk = `event: data\ndata: ${JSON.stringify(chunkMsg)}\n\n`;
+        controller.enqueue(new TextEncoder().encode(sseChunk));
+        i += chunkSize;
+      } else {
+        controller.close();
+      }
+    },
+  });
+}
+
+/**
+ * @param {number} ms
+ * @returns {Promise<any>}
+ */
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function testRequestResponse(port, msg) {
+  await sleep(3000);
+  const reader = jsonMessageToSSEStream(
+    TEST_MESSAGES[Math.floor(Math.random() * 4)],
+    5,
+  ).getReader();
+  let line;
+
+  do {
+    line = await reader.read();
+    if (line.value) {
+      port.postMessage({ ok: true, chunk: Array.from(line.value) });
+    }
+  } while (!line.done);
+
+  port.postMessage({ done: true });
+}
+
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name === "stream") {
     port.onMessage.addListener(requestResponse.bind(this, port));
+  } else if (port.name === "test_stream") {
+    port.onMessage.addListener(testRequestResponse.bind(this, port));
   }
 });
 
@@ -159,7 +272,7 @@ async function GetLangauge() {
   return lang;
 }
 
-async function GetSettings(response) {
+async function GetSettings() {
   var settings;
   settings = await new Promise((resolve) => {
     chrome.storage.local.get(["settings"], (result) => {
@@ -176,8 +289,19 @@ async function messageHandler(msg, sender, response) {
     GetLangauge().then((lang) => response(lang));
   } else if (msg.action === "translate_one_word") {
     TranslateAWord(msg.data, response);
+  } else if (msg.action === "test_translate_one_word") {
+    // test
+    sleep(3000).then(() => {
+      response({
+        ok: true,
+        result: {
+          user_id: msg.data.user_id,
+          text: TEST_HTML[Math.random() < 0.5 ? 0 : 1],
+        },
+      });
+    });
   } else if (msg.action === "change_language") {
-    changeLanguge(msg.data, response);
+    ChangeLanguage(msg.data, response);
   } else if (msg.action === "abort_stream") {
     if (controller !== null) {
       controller.abort();
@@ -188,8 +312,11 @@ async function messageHandler(msg, sender, response) {
     chrome.storage.local.set({ settings: msg.settings });
     response({ null: null });
   } else if (msg.action === "save_language") {
-    GetUserID().then((userID) => {
-      changeLanguge({ user_id: userID, lang_code: msg.language }, response);
+    GetUserID().then((info) => {
+      ChangeLanguage(
+        { user_id: info.user_id, lang_code: msg.language },
+        response,
+      );
     });
     chrome.storage.local.set({ new_language: msg.language });
     // response({ ok: true });

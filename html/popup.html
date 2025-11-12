@@ -34,12 +34,12 @@
                     </div>
                 </div>
                 <div class="container">
-                    <textarea id="input" class="input placeholder">Type your text here...</textarea>
+                    <textarea id="input" class="input placeholder" spellcheck="false">Type your text here...</textarea>
                     <div id="input_delete" class="action-btn delete">
                         <img src="../icons/delete.png" alt="">
                     </div>
                     <div id="input_copy" class="action-btn copy">
-                        <img src="../icons/icon_copy_black.png" alt="">
+                        <img id="input_copy_img" src="../icons/icon_copy_black.png" alt="">
                     </div>
                 </div>
 
@@ -52,12 +52,13 @@
                                 Translating
                             </div>
                         </div>
+                        <div id="output_content" class="output-content"></div>
                     </div>
                     <div id="output_delete" class="action-btn delete">
                         <img src="../icons/delete.png" alt="">
                     </div>
                     <div id="output_copy" class="action-btn copy">
-                        <img src="../icons/icon_copy_black.png" alt="">
+                        <img id="output_copy_img" src="../icons/icon_copy_black.png" alt="">
                     </div>
                 </div>
                 <div id="send_btn" class="send">Send</div>
@@ -71,13 +72,13 @@
                 <div class="slide-title">Settings</div>
             </div>
 
-            <div class="settings-option">
+            <!--<div class="settings-option">
                 <span>Enable inline button</span>
                 <label class="switch">
                     <input type="checkbox" id="inline_switch" checked />
                     <span class="slider"></span>
                 </label>
-            </div>
+            </div>-->
 
             <div class="settings-option">
                 <span>Enable context menu</span>
@@ -98,9 +99,9 @@
             </div>
 
             <div class="settings-actions">
+                <div id="status_change" class="status"></div>
                 <button id="save_settings" class="save-btn">Save Settings</button>
             </div>
-            <div id="status_change" class="status"></div>
         </div>
         <script src="../js/output.js"></script>
         <script src="../js/translate.js"></script>

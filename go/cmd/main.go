@@ -41,7 +41,7 @@ func (api *API) isDataRelevant(req *Request, ctx *gin.Context, withText bool) bo
 	if !ok {
 		ctx.Data(http.StatusBadRequest, "application/json", []byte(fmt.Sprintf(app.ERROR_JSON, app.INVALID_PARAMETERS, err.Error())))
 	} else {
-		ok = withText && req.Text != ""
+		ok = !withText || req.Text != ""
 		if !ok {
 			ctx.Data(http.StatusBadRequest, "application/json", []byte(fmt.Sprintf(app.ERROR_JSON, app.INVALID_PARAMETERS, "'text' parameter is required")))
 		}

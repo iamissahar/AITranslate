@@ -28,7 +28,7 @@ const PROCCESS_STATUS = [
   "Completing",
 ];
 const GOOGLE_DRIVE = "google_drive";
-const REGULAR_PAGE = "regulart_page";
+const REGULAR_PAGE = "regular_page";
 const lineInPX = 19.2;
 const popupWidth = 400;
 const offset = 10;
@@ -53,20 +53,21 @@ var selectionChanged = false;
 var selectionTimeoutID = 0;
 
 class InlineOutput extends Output {
-  static #DEFAULT_LINE_WIDTH = 367
-  #lineHolder = null;
+  static #DONE_IMG = `${chrome.runtime.getURL("icons/checkmark_black.png")}`;
+  static #COPY_IMG = `${chrome.runtime.getURL("icons/icon_copy_black.png")}`;
+  static #DEFAULT_LINE_WIDTH = 367;
   #hiddenLineHolder = null;
-  #wordHolder = [];
   #hiddenWordHolder = [];
   #buffer = "";
   #houtput = hroot.getElementById("hidden_phrase");
   #content = root.getElementById("window_content");
   #hidHolder = hroot.getElementById("hidden_holder");
   #app = root.getElementById("translation_window");
-  #hiddenWordHolder = [];
+  #copyBtn = root.getElementById("copy_btn");
+  #copyImg = root.getElementById("copy_btn_img");
   #wordHolder = [];
-  #hiddenLineHolder = [];
   #lineHolder = [];
+  #i = 0;
   #isBusy = [false, false, false, false, false];
 
   /**
@@ -77,7 +78,7 @@ class InlineOutput extends Output {
     super(statusMsg, output);
     this.output = root.getElementById("phrase");
     this.statusMsg = root.getElementById("status_message");
-    this.#InitHolders();
+    // this.#InitHolders();
   }
 
   #InitHolders() {
@@ -101,69 +102,6 @@ class InlineOutput extends Output {
         example: hroot.getElementById(`meaning_${i}`),
       };
     }
-  }
-
-  /**@returns {{top: number; bottom: number; height: number; ok: boolean; overflow: boolean;}} */
-  #IsRestructedNeeded() {
-    var res = { top: 0, bottom: 0, height: 0, ok: false, overflow: false },
-      hrect,
-      rect;
-    hrect = this.#hidHolder.getBoundingClientRect();
-    rect = this.#app.getBoundingClientRect();
-
-    if (hrect.height >= window.innerHeight) {
-      // if new height doesn't fit display at all
-      res = {
-        top: 0,
-        bottom: window.innerHeight,
-        height: window.innerHeight,
-        ok: true,
-        overflow: true,
-      };
-    } else if (!onlyup) {
-      if (rect.top + hrect.height >= window.innerHeight) {
-        // if height is too much, and it doesn't fit in a display (bottom),
-        // I need to raise up popup.top, til the future popup.bottom
-        // fits in a display
-        res = {
-          top: rect.top + hrect.height - window.innerHeight,
-          bottom: window.innerHeight,
-          height: hrect.height,
-          ok: true,
-          overflow: false,
-        };
-      } else {
-        res = {
-          top: rect.top,
-          bottom: rect.top + hrect.height,
-          height: hrect.height,
-          ok: true,
-          overflow: false,
-        };
-      }
-    } else if (onlyup) {
-      if (rect.bottom - hrect.height <= 0) {
-        // if height is too much, and it doesn't fit in a display (top),
-        // I need to reduce popup.bottom down, til the future popup.top
-        // fits in a display
-        res = {
-          top: 0,
-          bottom: hrect.height,
-          height: hrect.height,
-          ok: true,
-          overflow: false,
-        };
-      } else {
-        res = {
-          top: rect.bottom - hrect.height,
-          bottom: rect.bottom,
-          height: hrect.height,
-          ok: true,
-          overflow: false,
-        };
-      }
-    }
-    return res;
   }
 
   /**
@@ -216,42 +154,21 @@ class InlineOutput extends Output {
   }
 
   #AddJsonStruture(res) {
-    var indx = 0;
-    var meaning, obj;
+    var obj;
+    this.#houtput.innerHTML = res;
+    _application.HandleResizing();
+    // if (obj.ok) {
+    //   this.#app.style.top = `${obj.top}px`;
+    //   this.#app.style.bottom = `${obj.bottom}px`;
+    //   this.#app.style.height = `${obj.height}px`;
 
-    for (var j = 0; j < this.#isBusy.length; j++) {
-      if (!this.#isBusy[j] && indx < res.meanings.length) {
-        meaning = res.meanings[indx];
-
-        this.#HiddenInsert(
-          res.part_of_speech,
-          meaning,
-          j,
-          indx + 1 < res.meanings.length,
-        );
-
-        obj = this.#IsRestructedNeeded();
-        if (obj.ok) {
-          popup.style.top = `${top}px`;
-          popup.style.bottom = `${bottom}px`;
-          popup.style.height = `${height}px`;
-
-          if (overflow) {
-            content.style.overflow = "auto";
-            content.scrollWidth = "auto";
-          }
-        }
-
-        indx = this.#Insert(
-          res.part_of_speech,
-          meaning,
-          res.meanings.length,
-          indx,
-          j,
-          overflow,
-        );
-      }
-    }
+    //   if (obj.overflow) {
+    //     this.#content.style.overflow = "auto";
+    //     // this.#content.scrollWidth = "auto";
+    //   }
+    // }
+    this.output.innerHTML = res;
+    this.#copyBtn.classList.add("show");
   }
 
   TurnOffAnimation() {
@@ -262,27 +179,47 @@ class InlineOutput extends Output {
   }
 
   Clear() {
-    this.#houtput.textContent = "";
+    this.#houtput.innerText = "";
     this.output.style.display = "block";
     this.statusMsg.remove();
+  }
+
+  #Copy() {
+    navigator.clipboard.writeText(this.output.innerText);
+    this.#copyImg.src = InlineOutput.#DONE_IMG;
+    setTimeout(() => {
+      this.#copyImg.src = InlineOutput.#COPY_IMG;
+    }, 1500);
   }
 
   Flush() {
     this.#houtput.innerText = this.#buffer;
     this.output.innerText = this.#buffer;
 
-    _application.TurnOffObserver()
-    this.#houtput.textContent = "";
+    _application.TurnOffObserver();
+    // this.#houtput.textContent = "";
+    console.log(
+      "this.#houtput right after turning off the observer:",
+      this.#houtput,
+    );
+    this.#copyBtn.classList.add("show");
+    this.#copyBtn.addEventListener("click", this.#Copy.bind(this));
   }
 
   /**@param {string} text  */
-  Add(text) {
+  async Add(text) {
+    if (performance.now() % 100 < 1) console.log("tick");
+
     if (this.isStream) {
       this.#buffer += text;
+      if (this.#buffer.length >= Output.BUFFER_LENGTH + this.#i) {
+        this.#houtput.textContent = this.#buffer;
+        _application.HandleResizing();
 
-      if (this.#buffer.length >= Output.BUFFER_LENGTH) {
-        this.#houtput.innerText = this.#buffer;
-        this.output.innerText = this.#buffer;
+        this.output.textContent = this.#buffer;
+        this.#i += Output.BUFFER_LENGTH;
+        console.log("[DEBUG] buffer:", this.#buffer);
+        console.log("[DEBUG] innerText before:", this.output.textContent);
       }
     } else {
       this.#AddJsonStruture(text);
@@ -575,20 +512,21 @@ class InlineOutput extends Output {
 // }
 
 class Application {
-  static #DEFAULT_HEIGHT = 55
+  static #MAX_HEIGHT = 500;
   static #DEFAULT_WIDTH = 400;
   static #DEFAULT_HEIGHT = 55;
+  static #DEFAULT_MARGIN = 15;
   static #OFFSET = 10;
-  static #DEFAULT_HEADERS_HEIGHT = 25;
   #hidHolder = hroot.getElementById("hidden_holder");
   #hinput = hroot.getElementById("hidden_phrase");
   #app = root.getElementById("translation_window");
+  #content = root.getElementById("window_content");
   #onlyup = false;
   #text = "";
-  #observer = null
-  #stopgrowing = false
-  #currentlineHeight = 20
-  #output = new InlineOutput()
+  #observer = null;
+  #stopgrowing = false;
+  #currentHeight = 20;
+  #output = new InlineOutput();
 
   /**@param {string} type  */
   constructor(type) {
@@ -596,9 +534,71 @@ class Application {
   }
 
   #TurnOnOverflow() {
-    content.style.overflow = "auto";
-    content.scrollWidth = "auto";
+    this.#content.style.overflow = "auto";
+    // this.#content.scrollWidth = "auto";
   }
+
+  // /**@returns {{top: number; bottom: number; height: number; ok: boolean; overflow: boolean;}} */
+  // IsRestructionNeeded() {
+  //   var res = { top: 0, bottom: 0, height: 0, ok: false, overflow: false },
+  //     hrect,
+  //     rect;
+  //   hrect = this.#hidHolder.getBoundingClientRect();
+  //   rect = this.#app.getBoundingClientRect();
+  //   if (hrect.height >= window.innerHeight) {
+  //     // if new height doesn't fit display at all
+  //     res = {
+  //       top: 0,
+  //       bottom: window.innerHeight,
+  //       height: window.innerHeight,
+  //       ok: true,
+  //       overflow: true,
+  //     };
+  //   } else if (!this.#onlyup) {
+  //     if (rect.top + hrect.height >= window.innerHeight) {
+  //       // if height is too much, and it doesn't fit in a display (bottom),
+  //       // I need to raise up popup.top, til the future popup.bottom
+  //       // fits in a display
+  //       res = {
+  //         top: rect.top + hrect.height - window.innerHeight,
+  //         bottom: window.innerHeight,
+  //         height: hrect.height,
+  //         ok: true,
+  //         overflow: false,
+  //       };
+  //     } else {
+  //       res = {
+  //         top: rect.top,
+  //         bottom: rect.top + hrect.height,
+  //         height: hrect.height,
+  //         ok: true,
+  //         overflow: false,
+  //       };
+  //     }
+  //   } else if (this.#onlyup) {
+  //     if (rect.bottom - hrect.height <= 0) {
+  //       // if height is too much, and it doesn't fit in a display (top),
+  //       // I need to reduce popup.bottom down, til the future popup.top
+  //       // fits in a display
+  //       res = {
+  //         top: 0,
+  //         bottom: hrect.height,
+  //         height: hrect.height,
+  //         ok: true,
+  //         overflow: false,
+  //       };
+  //     } else {
+  //       res = {
+  //         top: rect.bottom - hrect.height,
+  //         bottom: rect.bottom,
+  //         height: hrect.height,
+  //         ok: true,
+  //         overflow: false,
+  //       };
+  //     }
+  //   }
+  //   return res;
+  // }
 
   /**
    * @param {string} top
@@ -607,41 +607,58 @@ class Application {
    */
   #Change(top, bottom, height) {
     if (height) {
-      popup.style.height = height;
+      this.#app.style.height = height;
     }
     if (top) {
       if (parseFloat(top) >= 0) {
-        popup.style.top = top;
+        this.#app.style.top = top;
       } else {
-        popup.style.top = "0px";
+        this.#app.style.top = "0px";
       }
     }
     if (bottom) {
-      popup.style.bottom = bottom;
+      this.#app.style.bottom = bottom;
     }
   }
 
   /**
    *
    * @param {number} popupBottom
+   * @param {number} popupTop
    * @param {number} newHeight
    */
-  #GrowDown(popupBottom, newHeight) {
-    var top, bottom, height
-    if (popupBottom < Window.innerHeight) {
-      console.log("grows down");
-      top = `0px`;
-      bottom = `${popupBottom - (newHeight - this.#currentlineHeight)}px`;
-      this.#currentlineHeight = newHeight;
-      height = `${InlinePopup.#DEFAULT_HEADERS_HEIGHT + InlinePopup.#DEFAULT_HEIGHT + this.#currentlineHeight}px`;
-    } else {
-      console.log("stops growing");
-      height = "100vh";
+  #GrowDown(popupBottom, popupTop, newHeight) {
+    var top, bottom, height;
+
+    if (newHeight >= Application.#MAX_HEIGHT) {
+      top = window.innerHeight + Application.#MAX_HEIGHT + "px";
+      bottom = window.innerHeight + "px";
+      height = Application.#MAX_HEIGHT + "px";
       this.#stopgrowing = true;
-      this.#currentlineHeight = Infinity;
-      this.#TurnOnOverflow()
+      this.#TurnOnOverflow();
     }
-    this.#Change(top, bottom, height)
+
+    if (popupBottom < window.innerHeight) {
+      console.log("grows down");
+      top = popupTop + "px";
+      bottom = popupTop + newHeight + "px";
+      this.#currentHeight = newHeight;
+      height = newHeight + "px";
+    } else {
+      if (popupTop > 0) {
+        // grows up
+        top = popupBottom + newHeight + "px";
+        bottom = popupBottom + "px";
+        height = newHeight + "px";
+      } else {
+        top = window.innerHeight + Application.#MAX_HEIGHT + "px";
+        bottom = window.innerHeight + "px";
+        height = Application.#MAX_HEIGHT + "px";
+        this.#stopgrowing = true;
+        this.#TurnOnOverflow();
+      }
+    }
+    this.#Change(top, bottom, height);
   }
 
   /**
@@ -650,75 +667,72 @@ class Application {
    * @param {number} newHeight
    */
   #GrowUp(popupBottom, popupTop, newHeight) {
-    var top, bottom, height
-    if (popupBottom > window.innerHeight) {
-      if (popupTop <= 0) {
-        console.log("stops growing");
-        // starts addiding new text into a container,
-        // but doesn't let grow the popup.
-        height = "100vh";
-        bottom = `${Window.innerHeight}px`;
-        top = "0px";
-        this.#stopgrowing = true;
-        this.#currentlineHeight = Infinity;
-        this.#TurnOnOverflow()
-      } else {
-        // grows up
-        console.log("grows up");
-        bottom = `${Window.innerHeight}px`;
-        top = `${popupTop - (newHeight - this.#currentlineHeight)}px`;
-        this.#currentlineHeight = newHeight;
-        height = `${InlinePopup.#DEFAULT_HEADERS_HEIGHT + InlinePopup.#DEFAULT_HEIGHT + this.#currentlineHeight}px`;
-      }
+    var top, bottom, height;
+    if (newHeight >= Application.#MAX_HEIGHT) {
+      top = popupBottom + Application.#MAX_HEIGHT + "px";
+      bottom = popupBottom + "px";
+      height = Application.#MAX_HEIGHT + "px";
+      this.#stopgrowing = true;
+      this.#TurnOnOverflow();
     } else {
-      console.log("grows down");
-      top = "0px"
-      bottom = ""
-      this.#currentlineHeight = newHeight;
-      height = `${InlinePopup.#DEFAULT_HEADERS_HEIGHT  + InlinePopup.#DEFAULT_HEIGHT + this.#currentlineHeight}px`;
+      if (popupBottom < window.innerHeight) {
+        if (popupTop <= 0) {
+          console.log("stops growing");
+          height = Application.#MAX_HEIGHT + "px";
+          bottom = popupBottom + "px";
+          top = popupBottom - newHeight + "px";
+          this.#stopgrowing = true;
+          this.#TurnOnOverflow();
+        } else {
+          // grows up
+          console.log("grows up");
+          bottom = popupBottom + "px";
+          top = popupBottom - newHeight + "px";
+          this.#currentHeight = newHeight;
+          height = newHeight + "px";
+        }
+      } else {
+        console.log("grows down");
+        top = "0px";
+        bottom = "";
+        this.#currentHeight = newHeight;
+        height = newHeight + "px";
+      }
     }
-    this.#Change(top, bottom, height)
+    this.#Change(top, bottom, height);
   }
 
+  HandleResizing() {
+    var rect, newHeight;
+    rect = this.#app.getBoundingClientRect();
+    newHeight = this.#hidHolder.getBoundingClientRect().height;
 
-  /**@param {ResizeObserverEntry[]} entries  */
-  #HandleResizing(entries) {
-    var entry, rect, newHeight;
+    console.log(this.#currentHeight, newHeight);
+    console.log(this.#onlyup);
 
-    for (entry of entries) {
-      rect = root.getElementById("translation_window").getBoundingClientRect();
-      newHeight = entry.contentRect.height
-
-      if (!this.#stopgrowing) {
-        // if the popup is upper
-        if (this.#currentlineHeight < newHeight && this.#onlyup) {
-          this.#GrowDown(rect.bottom, newHeight)
-          // if the popup is under
-        } else if (this.#currentlineHeight < newHeight && !this.#onlyup) {
-          this.#GrowUp(rect.bottom, rect.top, newHeight)
-        }
+    if (!this.#stopgrowing) {
+      if (this.#currentHeight < newHeight && !this.#onlyup) {
+        this.#GrowDown(rect.bottom, rect.top, newHeight);
+      } else if (this.#currentHeight < newHeight && this.#onlyup) {
+        this.#GrowUp(rect.bottom, rect.top, newHeight);
       }
     }
   }
 
   #NewObserver() {
-    return new ResizeObserver((entries) => this.#HandleResizing(entries));
+    // return new ResizeObserver((entries) => this.#HandleResizing(entries));
   }
 
   TurnOffObserver() {
-    this.#observer.disconnect()
-    this.#currentlineHeight = 20;
+    // this.#observer.disconnect();
+    this.#currentHeight = 20;
     this.#stopgrowing = false;
   }
 
-  /**
-   * @param {string} text
-   * @returns {void}
-   */
-  #AppearHidden(text) {
-    this.#hinput.textContent = text;
+  #AppearHidden() {
     this.#hinput.textContent = "";
-    observer.observe(this.#hinput);
+    // console.log(this.#observer);
+    // this.#observer.observe(this.#hidHolder);
   }
 
   #GoogleDriveAppearance() {
@@ -740,7 +754,6 @@ class Application {
       }
 
       this.#app.style.display = "flex";
-      input.TurnOnAnimation();
     }
   }
 
@@ -761,14 +774,10 @@ class Application {
 
     if (rect.top > window.innerHeight - rect.bottom) {
       console.log("popup is upper");
-      res =
-        rect.top -
-        Application.#OFFSET -
-        Application.#DEFAULT_HEIGHT -
-        Application.#DEFAULT_HEADERS_HEIGHT;
+      res = rect.top - Application.#OFFSET - Application.#DEFAULT_HEIGHT;
       if (res > 0) {
         top = `${res}px`;
-        this.onlyup = true;
+        this.#onlyup = true;
       } else {
         top = "0px";
       }
@@ -776,14 +785,13 @@ class Application {
       // the popup is under
       console.log("popup is under");
       top = `${rect.bottom + Application.#OFFSET}px`;
-      this.onlyup = false;
+      this.#onlyup = false;
     }
 
     console.log("at the moment of appearens: top = ", top, "left = ", left);
     this.#app.style.top = top;
     this.#app.style.left = left;
     this.#app.style.display = "flex";
-    input.TurnOnAnimation();
   }
 
   /**
@@ -800,6 +808,10 @@ class Application {
       if (selection && !selection.rangeCount) res = false;
     }
 
+    console.log("selection:", selection);
+    console.log(window.innerWidth < popupWidth);
+    console.log(selection && !selection.rangeCount);
+
     return res;
   }
 
@@ -807,12 +819,12 @@ class Application {
     var selection;
 
     selection = window.getSelection();
+    // this.#observer = this.#NewObserver();
 
     if (this.#text) {
       this.#AppearHidden(this.#text);
-      if (this.#IsShowable(selection)) {
-        this.#DefaultAppearance(selection, this.#text);
-        this.#observer = this.#NewObserver()
+      if (this.#IsShowable(selection) === true) {
+        this.#DefaultAppearance(selection);
         Translate(this.#output, this.#text);
       } else {
         alert("display is too small");
@@ -825,11 +837,11 @@ class Application {
   #ThroughGoogleDrive() {
     console.log("[DEBUG] going through google");
     console.log("[DEBUG] this.#text is", this.#text);
+    this.#observer = this.#NewObserver();
     this.#AppearHidden(this.#text);
 
     if (this.#IsShowable(null)) {
       this.#GoogleDriveAppearance();
-      this.#observer = this.#NewObserver()
       Translate(this.#output, this.#text);
     }
   }
@@ -857,12 +869,19 @@ class Application {
   }
 
   async Activate() {
-    this.#text = sh.GetText();
+    console.log("[DEBUG] HELLO! Appliocation has been ACTIVATED");
+    if (!this.#text) {
+      this.#text = sh.GetText();
+    }
     if (this.type === GOOGLE_DRIVE) {
       this.#ThroughGoogleDrive();
     } else if (this.type === REGULAR_PAGE) {
       this.#ThroughSelection();
     }
+
+    // setTimeout(() => {
+    //   this.#text = "";
+    // }, 300);
   }
 }
 
@@ -904,85 +923,85 @@ function turnOnOverFlow() {
   });
 }
 
-const observer = new ResizeObserver((entries) => {
-  for (let entry of entries) {
-    var top, height, bottom;
-    const popupRect = root
-      .getElementById("translation_window")
-      .getBoundingClientRect();
-    const popupTop = popupRect.top;
-    const popupBottom = popupRect.bottom;
-    const newHeight = entry.contentRect.height;
-    if (!stopgrowing) {
-      // if the popup is upper
-      if (currentlineHeight < newHeight && onlyup) {
-        if (popupTop <= 0) {
-          if (popupBottom < window.innerHeight) {
-            // grows down
-            console.log("grows down");
-            top = `0px`;
-            bottom = `${popupBottom - (newHeight - currentlineHeight)}px`;
-            currentlineHeight = newHeight;
-            height = `${headersHeight + defaultHeight + currentlineHeight}px`;
-          } else {
-            console.log("stops growing");
-            // starts addiding new text into a container,
-            // but doesn't let grow the popup.
-            height = "100vh";
-            stopgrowing = true;
-            currentlineHeight = Infinity;
-            turnOnOverFlow().then(() => console.log("overflow is tuned on"));
-          }
-        } else {
-          // grows up
-          console.log("grows up");
-          top = `${popupTop - (newHeight - currentlineHeight)}px`;
-          currentlineHeight = newHeight;
-        }
-        changePopup(height, bottom, top).then(() =>
-          console.log("popup has been changed"),
-        );
-        // if the popup is under
-      } else if (currentlineHeight < newHeight && !onlyup) {
-        console.log(
-          "popupBottom = ",
-          popupBottom,
-          "window.innerHeight = ",
-          window.innerHeight,
-          "is popupBottom greater?: ",
-          popupBottom > window.innerHeight,
-        );
-        if (popupBottom > window.innerHeight) {
-          if (popupTop <= 0) {
-            console.log("stops growing");
-            // starts addiding new text into a container,
-            // but doesn't let grow the popup.
-            height = "100vh";
-            bottom = `${window.innerHeight}px`;
-            top = "0px";
-            stopgrowing = true;
-            currentlineHeight = Infinity;
-            turnOnOverFlow().then(() => console.log("overflow is tuned on"));
-          } else {
-            // grows up
-            console.log("grows up");
-            bottom = `${window.innerHeight}px`;
-            top = `${popupTop - (newHeight - currentlineHeight)}px`;
-            currentlineHeight = newHeight;
-            height = `${headersHeight + defaultHeight + currentlineHeight}px`;
-          }
-        } else {
-          console.log("grows down");
-          currentlineHeight = newHeight;
-          height = `${headersHeight + defaultHeight + currentlineHeight}px`;
-        }
-        changePopup(height, bottom, top).then(() =>
-          console.log("popup has been changed"),
-        );
-      }
-    }
-  }
-});
+// const observer = new ResizeObserver((entries) => {
+//   for (let entry of entries) {
+//     var top, height, bottom;
+//     const popupRect = root
+//       .getElementById("translation_window")
+//       .getBoundingClientRect();
+//     const popupTop = popupRect.top;
+//     const popupBottom = popupRect.bottom;
+//     const newHeight = entry.contentRect.height;
+//     if (!stopgrowing) {
+//       // if the popup is upper
+//       if (currentlineHeight < newHeight && onlyup) {
+//         if (popupTop <= 0) {
+//           if (popupBottom < window.innerHeight) {
+//             // grows down
+//             console.log("grows down");
+//             top = `0px`;
+//             bottom = `${popupBottom - (newHeight - currentlineHeight)}px`;
+//             currentlineHeight = newHeight;
+//             height = `${headersHeight + defaultHeight + currentlineHeight}px`;
+//           } else {
+//             console.log("stops growing");
+//             // starts addiding new text into a container,
+//             // but doesn't let grow the popup.
+//             height = "100vh";
+//             stopgrowing = true;
+//             currentlineHeight = Infinity;
+//             turnOnOverFlow().then(() => console.log("overflow is tuned on"));
+//           }
+//         } else {
+//           // grows up
+//           console.log("grows up");
+//           top = `${popupTop - (newHeight - currentlineHeight)}px`;
+//           currentlineHeight = newHeight;
+//         }
+//         changePopup(height, bottom, top).then(() =>
+//           console.log("popup has been changed"),
+//         );
+//         // if the popup is under
+//       } else if (currentlineHeight < newHeight && !onlyup) {
+//         console.log(
+//           "popupBottom = ",
+//           popupBottom,
+//           "window.innerHeight = ",
+//           window.innerHeight,
+//           "is popupBottom greater?: ",
+//           popupBottom > window.innerHeight,
+//         );
+//         if (popupBottom > window.innerHeight) {
+//           if (popupTop <= 0) {
+//             console.log("stops growing");
+//             // starts addiding new text into a container,
+//             // but doesn't let grow the popup.
+//             height = "100vh";
+//             bottom = `${window.innerHeight}px`;
+//             top = "0px";
+//             stopgrowing = true;
+//             currentlineHeight = Infinity;
+//             turnOnOverFlow().then(() => console.log("overflow is tuned on"));
+//           } else {
+//             // grows up
+//             console.log("grows up");
+//             bottom = `${window.innerHeight}px`;
+//             top = `${popupTop - (newHeight - currentlineHeight)}px`;
+//             currentlineHeight = newHeight;
+//             height = `${headersHeight + defaultHeight + currentlineHeight}px`;
+//           }
+//         } else {
+//           console.log("grows down");
+//           currentlineHeight = newHeight;
+//           height = `${headersHeight + defaultHeight + currentlineHeight}px`;
+//         }
+//         changePopup(height, bottom, top).then(() =>
+//           console.log("popup has been changed"),
+//         );
+//       }
+//     }
+//   }
+// });
 
 function errorChanges(text) {
   return new Promise((resolve) => {
@@ -1661,7 +1680,7 @@ function dataIntoLets(hidden, visible) {
 /** @param {Event} event */
 function Cliked(event) {
   console.log("Event target:", event.target);
-  if (root && !root.contains(event.target)) {
+  if (root && !root?.host.contains(event.target)) {
     console.log("the click is outside of the root");
     _application.Close();
   }
@@ -1698,16 +1717,11 @@ function CopyClick() {
 }
 
 function AddListeners() {
-  console.assert(_application !== undefined);
   setTimeout(() => {
     document.addEventListener("click", (event) => Cliked(event));
   }, 500);
-  // document.addEventListener("click", (event) => Cliked(event));
   document.addEventListener("keydown", (event) => KeyDown(event));
-  root.getElementById("copy_btn").addEventListener("click", CopyClick);
-  root
-    .getElementById("close_btn")
-    .addEventListener("click", () => _application.Close());
+  // root.getElementById("copy_btn").addEventListener("click", CopyClick);
 }
 
 /**@returns {{ el: Element | null; html_el: HTMLElement | null}} */
@@ -1778,9 +1792,13 @@ function Insert(obj) {
   }
 }
 
-/**@param {string} type  */
-function Begin(type) {
+/**
+ * @param {string} text
+ * @param {string} type
+ */
+function Begin(text, type) {
   var hdobj, obj;
+  inproccess = true;
   hdobj = CreateHiddenObject();
   obj = CreateObject();
   hroot = hdobj.root;
@@ -1788,10 +1806,9 @@ function Begin(type) {
   Insert(hdobj);
   Insert(obj);
   console.log("inserted");
-  input = new Input();
   _application = new Application(type);
+  _application.SaveText(text);
   _application.Activate(type).then(() => AddListeners());
-
   // return new Promise((resolve) => {
   //   hidden().then((hiddenLink) => {
   //     visible().then((visibleLink) => {
@@ -1952,14 +1969,14 @@ class GoButton {
   }
 }
 
-if (!window.location.href.includes("https://docs.google.com/document")) {
-  goBtn = new GoButton();
-}
+// if (!window.location.href.includes("https://docs.google.com/document")) {
+//   goBtn = new GoButton();
+// }
+//
 
-chrome.runtime.sendMessage({ action: "say_hello" });
-// chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-//   console.log("Message received:", msg);
-//   if (msg.action === "translate" && msg.text) {
-//     Begin(REGULAR_PAGE);
-//   }
-// });
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  console.log("Message received:", msg);
+  if (msg.action === "translate" && msg.text) {
+    Begin(msg.text, REGULAR_PAGE);
+  }
+});

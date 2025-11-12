@@ -1,10 +1,12 @@
 class Queue {
+  static #BATCH_SIZE = 3;
   /** @type {Array<{task: () => Promise<any>, resolve: Function, reject: Function}>} */
   #queue = [];
   /** @type {Boolean} */
   #processing = false;
   /** @type {Function} */
   #onIdleCallback = null;
+  #processed = 0;
 
   /** @param {Function} callback */
   OnIdle(callback) {
@@ -13,10 +15,14 @@ class Queue {
   }
 
   DoCallback() {
-    while (this.#processing) {}
-
-    console.log("calling callback!");
-    this.#onIdleCallback();
+    const checkIdle = () => {
+      if (!this.#processing) {
+        if (this.#onIdleCallback) this.#onIdleCallback();
+      } else {
+        setTimeout(checkIdle, 0);
+      }
+    };
+    checkIdle();
   }
 
   /**
@@ -44,6 +50,12 @@ class Queue {
         try {
           result = await chunk.task();
           chunk.resolve(result);
+
+          this.#processed++;
+          if (this.#processed >= Queue.#BATCH_SIZE) {
+            await new Promise((r) => setTimeout(r, 50));
+            this.#processed = 0;
+          }
         } catch (err) {
           chunk.reject(err);
         }

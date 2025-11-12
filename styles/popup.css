@@ -1,4 +1,3 @@
-/* Общие стили */
 body {
     margin: 0;
     padding: 10px;
@@ -10,7 +9,7 @@ body {
 /* Popup */
 .popup {
     width: 480px;
-    height: 550px;
+    height: 500px;
     max-height: 550px;
     background-color: #ffffff;
     border-radius: 16px;
@@ -103,7 +102,7 @@ body {
 }
 
 .output {
-    height: 235px;
+    height: 200px;
     overflow-y: auto;
     overflow-x: hidden;
 }
@@ -112,6 +111,14 @@ body {
     outline: none;
     border-color: #4f46e5;
     box-shadow: 0 0 6px rgba(79, 70, 229, 0.3);
+}
+
+.action-btn.locked,
+.action-btn.locked img,
+.input.locked {
+    pointer-events: none;
+    user-select: none;
+    opacity: 0.6;
 }
 
 .placeholder {
@@ -384,4 +391,16 @@ input:checked + .slider::before {
     font-size: 13px;
     font-style: italic;
     color: #6b7280; /* серый */
+}
+
+.status {
+    text-align: center;
+    font-size: 15px;
+    opacity: 0;
+    transition: 0.5s opacity;
+    margin-bottom: 5px;
+}
+
+.status.visible {
+    opacity: 1;
 }

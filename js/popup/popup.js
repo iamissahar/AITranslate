@@ -65,11 +65,9 @@ var input = null;
 var settings = null;
 
 class PopupOutput extends Output {
-  static #BEFORE = `<div id="status_content" class="status-content">
-  <div class="status-message" id="status_message">
-    Translating
-  </div>
-</div>`;
+  static #DONE_IMG = "../icons/checkmark_black.png";
+  static #COPY_IMG = "../icons/icon_copy_black.png";
+  #outputContent = document.getElementById("output_content");
   #deleteBtn = document.getElementById("output_delete");
   #copyBtn = document.getElementById("output_copy");
   #buffer = "";
@@ -83,11 +81,13 @@ class PopupOutput extends Output {
     this.output = document.getElementById("output");
     this.statusMsg = document.getElementById("status_message");
     this.#InitListeners();
+    console.log(this.#outputContent);
   }
 
   Clear() {
-    this.output.textContent = "";
-    this.statusMsg.textContent = "";
+    console.log(this.#outputContent);
+    this.#outputContent.innerHTML = "";
+    this.statusMsg.innerHTML = "";
     this.#deleteBtn.classList.remove("show");
     this.#copyBtn.classList.remove("show");
     console.log("cleared");
@@ -98,7 +98,11 @@ class PopupOutput extends Output {
   }
 
   #AddJsonStructure(text) {
-    this.output.innerHTML = PopupOutput.#BEFORE + text;
+    this.#outputContent.innerHTML = text;
+    // this.output.innerHTML = PopupOutput.#BEFORE + text;
+    this.#deleteBtn.classList.add("show");
+    this.#copyBtn.classList.add("show");
+    input.Complete();
   }
 
   /**@param {string} text  */
@@ -108,7 +112,8 @@ class PopupOutput extends Output {
       console.log("going to add.");
       console.log(this.#buffer);
       if (this.#buffer.length >= Output.BUFFER_LENGTH + this.#i) {
-        this.output.innerText = this.#buffer;
+        this.#outputContent.innerText = this.#buffer;
+        // this.output.innerText = this.#buffer;
         this.#i += Output.BUFFER_LENGTH;
       }
     } else {
@@ -117,28 +122,47 @@ class PopupOutput extends Output {
   }
 
   Flush() {
-    this.output.innerText = this.#buffer;
+    this.#outputContent.innerText = this.#buffer;
+    // this.output.innerText = this.#buffer;
+    // document.getElementById("output_delete").classList.add("show");
+    // document.getElementById("output_copy").classList.add("show");
     this.#deleteBtn.classList.add("show");
     this.#copyBtn.classList.add("show");
+    input.Complete();
   }
 
   #Delete() {
-    if (this.#deleteBtn.classList.contains("show"))
-      this.output.textContent = "";
+    if (this.#deleteBtn.classList.contains("show")) {
+      this.#outputContent.innerHTML = "";
+      this.#deleteBtn.classList.remove("show");
+      this.#copyBtn.classList.remove("show");
+    }
   }
 
   #Copy() {
-    if (this.#copyBtn.classList.contains("show") && this.output.textContent)
-      navigator.clipboard.writeText(this.output.textContent);
+    var img = document.getElementById("output_copy_img");
+    if (this.#copyBtn.classList.contains("show") && this.output.innerText) {
+      navigator.clipboard.writeText(this.output.innerText);
+      img.src = PopupOutput.#DONE_IMG;
+      setTimeout(() => {
+        img.src = PopupOutput.#COPY_IMG;
+      }, 1500);
+    }
   }
 
   #InitListeners() {
     this.#deleteBtn.addEventListener("click", this.#Delete.bind(this));
     this.#copyBtn.addEventListener("click", this.#Copy.bind(this));
   }
+
+  ClearBefore() {
+    this.#outputContent.innerHTML = "";
+  }
 }
 
 class Input {
+  static #DONE_IMG = "../icons/checkmark_black.png";
+  static #COPY_IMG = "../icons/icon_copy_black.png";
   #input = document.getElementById("input");
   #deleteBtn = document.getElementById("input_delete");
   #copyBtn = document.getElementById("input_copy");
@@ -169,16 +193,22 @@ class Input {
     );
   }
 
+  #Reset() {
+    this.sent = true;
+    this.#input.classList.add("locked");
+    this.#deleteBtn.classList.add("locked");
+    this.#copyBtn.classList.add("locked");
+    // this.#input.readOnly = true;
+    this.#content.style.display = "flex";
+  }
+
   async #Send() {
     if (!this.#sent) {
-      this.#sent = true;
-      console.log("[DEBUG] HEllo!");
-      console.log("[DEBUG] the language is:", this.#dropdown.value);
-      await this.#SaveLanguage();
-
-      this.#content.style.display = "flex";
-      // this.#statusMsg.style.display = "block";
+      output.ClearBefore();
       output.TurnOnAnimation();
+      this.#Reset();
+      await this.#SaveLanguage();
+      // this.#statusMsg.style.display = "block";
       console.log("[DEBUG] animation has been turned on");
       Translate(output, this.#GetText());
     }
@@ -209,9 +239,21 @@ class Input {
   }
 
   #Copy() {
+    var img = document.getElementById("input_copy_img");
     navigator.clipboard.writeText(
       this.#input.classList.contains("placeholder") ? "" : this.#input.value,
     );
+    img.src = Input.#DONE_IMG;
+    setTimeout(() => {
+      img.src = Input.#COPY_IMG;
+    }, 1500);
+  }
+
+  Complete() {
+    this.#sent = false;
+    this.#input.classList.remove("locked");
+    this.#deleteBtn.classList.remove("locked");
+    this.#copyBtn.classList.remove("locked");
   }
 
   Activate() {
@@ -288,14 +330,15 @@ class Settings {
     console.log(res);
 
     if (res.ok) {
-      this.#status.innerText = Settings.#SUCCESS;
       chrome.storage.local.set({
         new_language: data.lang_code,
         user_id: res.result.user_id,
       });
+      setTimeout(() => {
+        this.#status;
+      }, 1500);
     } else {
       this.#status.innerText = Settings.#ERROR;
-      console.error(res.result.error);
     }
   }
 
@@ -320,7 +363,7 @@ class Settings {
       });
     });
 
-    document.getElementById("inline_switch").checked = settings.inline_btn;
+    // document.getElementById("inline_switch").checked = settings.inline_btn;
     document.getElementById("context_switch").checked = settings.context_menu;
   }
 
@@ -335,22 +378,47 @@ class Settings {
     this.#settingsSlide.classList.remove("active");
   }
 
-  #SaveSettings() {
-    this.#status.classList.add("visible");
+  async #SaveSettings() {
+    var lang,
+      ok = false;
 
-    setTimeout(() => {
-      this.#status.classList.remove("visible");
-    }, 1500);
+    lang = await new Promise((resolve) => {
+      chrome.runtime.sendMessage({ action: "get_language" }, (res) => {
+        resolve(res.language || "");
+      });
+    });
+
+    console.log(document.getElementById("settings_dropdown").value);
+    if (lang !== document.getElementById("settings_dropdown").value) {
+      ok = await new Promise((resolve) => {
+        chrome.runtime.sendMessage(
+          { action: "save_language", language: lang },
+          (res) => {
+            console.log(res);
+            resolve(res.ok || false);
+          },
+        );
+      });
+    }
 
     chrome.runtime.sendMessage({
       action: "save_settings",
       settings: {
-        inline_btn: document.getElementById("inline_switch").checked,
-        context_menu: document.getElementById("context-switch").checked,
+        // inline_btn: document.getElementById("inline_switch").checked,
+        context_menu: document.getElementById("context_switch").checked,
       },
     });
 
-    this.#status.innerText = Settings.#SUCCESS;
+    if (ok) {
+      this.#status.innerText = Settings.#SUCCESS;
+    } else {
+      this.#status.innerText = Settings.#ERROR;
+    }
+
+    this.#status.classList.add("visible");
+    setTimeout(() => {
+      this.#status.classList.remove("visible");
+    }, 1500);
   }
 
   Activate() {
