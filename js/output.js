@@ -1,5 +1,5 @@
 class Output {
-  static BUFFER_LENGTH = 10;
+  static BUFFER_LENGTH = 20;
   static #PROCCESS_STATUS = [
     "Translating",
     "Getting data",

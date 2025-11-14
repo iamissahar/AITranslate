@@ -23,15 +23,12 @@ class SelectionHandler {
   /**@returns {Promise<string>} */
   async #GetSelection() {
     var result, method;
-    console.log("trying to get selection");
 
     for (method of this.#methods) {
       if (!result || !result.trim()) {
         try {
           result = await method();
-          console.log(`Method ${method.name} returned:`, result);
           if (result && result.trim().length > 0) {
-            console.log("result", result);
             break;
           }
         } catch (e) {
@@ -99,7 +96,6 @@ class SelectionHandler {
                 if (iframeSelection && iframeSelection.toString().trim()) {
                   text = iframeSelection.toString().trim();
                   if (text) {
-                    console.log("Found selection in iframe:", text);
                     resolve(text);
                   }
                 }
@@ -292,9 +288,9 @@ class SelectionHandler {
       this.#text = txt;
       this.#lasttext = txt;
 
-      if (goBtn && goBtn.Activate) {
-        goBtn.Activate();
-      }
+      // if (goBtn && goBtn.Activate) {
+      //   goBtn.Activate();
+      // }
 
       setTimeout(() => {
         this.#usedMouse = false;
@@ -354,8 +350,6 @@ class SelectionHandler {
           this.#Pull();
         }
       }, 300);
-
-      console.log("Google Docs aggressive selection handler initialized");
     } else {
       document.addEventListener("mousedown", this.#MouseDown.bind(this));
       document.addEventListener("mouseup", (e) => this.#MouseUp(e));

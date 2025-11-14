@@ -72,7 +72,7 @@ function GetStyles() {
       color: #374151;
       background: #ffffff;
       overflow-y: auto;
-      max-height: 400px;
+      max-height: 460px;
       scrollbar-width: thin;
       scrollbar-color: #cbd5e1 #f1f5f9;
   }
@@ -204,17 +204,14 @@ function GetStyles() {
 /**@returns {string} */
 function GetHTML() {
   return `<div id="translation_window" class="window">
-  <div class="copy-btn" id="copy_btn">
-    <img class="copy-logo" id="copy_btn_img" src=${chrome.runtime.getURL("icons/icon_copy_black.png")}>
-  </div>
-    <div class="window-content" id="window_content">
-      <img class="error-img" id="error_img" src=${chrome.runtime.getURL("/icons/error.png")}>
-      <div class="status-message" id="status_message">
-        Translating
-      </div>
-      <div class="phrase" id="phrase"></div>
+  <div class="window-content" id="window_content">
+    <img class="error-img" id="error_img" src=${chrome.runtime.getURL("/icons/error.png")}>
+    <div class="status-message" id="status_message">
+      Translating
     </div>
-  </div>`;
+    <div class="phrase" id="phrase"></div>
+  </div>
+</div>`;
 }
 
 /**@returns {string} */
@@ -312,7 +309,6 @@ function GetHiddenHTML() {
 }
 
 function GetButtonHTML() {
-  console.log("ALO?");
   return `<div id="go_btn">
     <img id="logo" src=${chrome.runtime.getURL("icons/very_small_logo.png")}>
   </div>`;
@@ -332,6 +328,37 @@ function GetButtonStyles() {
   opacity: 0;
   transition: opacity 0.5s;
   cursor: pointer;
+}
+#go_btn.show {
+  opacity: 1;
+}
+#logo {
+  width: 22px;
+  height: 20px;
+}`;
+}
+
+function GetButtonHTML() {
+  return `<div id="go_btn">
+    <img id="logo" src=${chrome.runtime.getURL("icons/very_small_logo.png")}>
+  </div>`;
+}
+
+function GetButtonStyles() {
+  return `#go_btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 5px;
+  position: absolute;
+  width: 25px;
+  height: 25px;
+  border-radius: 5px;
+  border: 1px solid #000000;
+  opacity: 0;
+  transition: opacity 0.5s;
+  cursor: pointer;
+  background-color: #ffff;
 }
 #go_btn.show {
   opacity: 1;

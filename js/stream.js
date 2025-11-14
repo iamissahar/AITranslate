@@ -56,7 +56,6 @@ class Stream {
 
       try {
         parsed = JSON.parse(data);
-        console.log(parsed);
         if (this.once) {
           this.once = false;
           chrome.storage.local.set({ user_id: parsed.result.user_id });
@@ -64,7 +63,7 @@ class Stream {
         }
 
         if (eventType === "data" && parsed.result !== undefined) {
-          this.output.Add(parsed.result.text);
+          await this.output.Add(parsed.result.text);
         }
       } catch (err) {
         console.error(err);
@@ -99,7 +98,6 @@ class Stream {
    */
   #GetResponse(msg, buffer, decoder, queue) {
     var uint8;
-    console.log("[DEBUG] msg:", msg);
     console.assert(
       typeof msg === "object" && msg !== null,
       "msg is not an object",
@@ -131,12 +129,10 @@ class Stream {
     }
 
     if (msg.done) {
-      console.log("stream ends");
       this.port.disconnect();
       queue.DoCallback();
     } else if (!msg.ok) {
       this.output.Add("Something went wrong!");
-      console.log("[ERROR]", msg);
     } else if (msg.chunk) {
       uint8 = new Uint8Array(msg.chunk);
       queue.Add(() => this.#HandleChunk(buffer, decoder, uint8));
@@ -154,19 +150,16 @@ class Stream {
       queue: new Queue(),
       user_id: await new Promise((resolve) => {
         chrome.runtime.sendMessage({ action: "get_user_id" }, (msg) => {
-          console.log(msg);
           resolve(msg.user_id || "");
         });
       }),
       language: await new Promise((resolve) => {
         chrome.runtime.sendMessage({ action: "get_language" }, (msg) => {
-          console.log("streaming language is:", msg.language);
           resolve(msg.language || "");
         });
       }),
     };
 
-    console.log("[DEBUG] sending data to background.js");
     this.port.postMessage({
       user_id: data.user_id,
       lang_code: data.language,

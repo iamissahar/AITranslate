@@ -37,31 +37,36 @@ class Queue {
     });
   }
 
-  /** @returns {Promise<void>} */
   async #Process() {
-    var chunk, result;
+    if (this.#processing) return;
 
-    if (!this.#processing) {
-      this.#processing = true;
+    this.#processing = true;
 
+    try {
       while (this.#queue.length > 0) {
-        chunk = this.#queue.shift();
+        // Обрабатываем только BATCH_SIZE задач за один "тик"
+        const batch = this.#queue.splice(0, Queue.#BATCH_SIZE);
 
-        try {
-          result = await chunk.task();
-          chunk.resolve(result);
+        // Обрабатываем пачку параллельно
+        await Promise.all(
+          batch.map(async ({ task, resolve, reject }) => {
+            try {
+              const result = await task();
+              resolve(result);
+            } catch (err) {
+              reject(err);
+            }
+          }),
+        );
 
-          this.#processed++;
-          if (this.#processed >= Queue.#BATCH_SIZE) {
-            await new Promise((r) => setTimeout(r, 50));
-            this.#processed = 0;
-          }
-        } catch (err) {
-          chunk.reject(err);
+        // Даем браузеру шанс обновить UI
+        if (this.#queue.length > 0) {
+          await new Promise((resolve) => setTimeout(resolve, 0));
         }
       }
-
+    } finally {
       this.#processing = false;
+      this.DoCallback();
     }
   }
 }

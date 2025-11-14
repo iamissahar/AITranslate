@@ -88,6 +88,7 @@ class PopupOutput extends Output {
     console.log(this.#outputContent);
     this.#outputContent.innerHTML = "";
     this.statusMsg.innerHTML = "";
+    this.#buffer = "";
     this.#deleteBtn.classList.remove("show");
     this.#copyBtn.classList.remove("show");
     console.log("cleared");
@@ -129,6 +130,7 @@ class PopupOutput extends Output {
     this.#deleteBtn.classList.add("show");
     this.#copyBtn.classList.add("show");
     input.Complete();
+    // this.#buffer = "";
   }
 
   #Delete() {
@@ -156,7 +158,10 @@ class PopupOutput extends Output {
   }
 
   ClearBefore() {
+    console.log("AM I EVEN CLEANING IT:?");
     this.#outputContent.innerHTML = "";
+    this.#outputContent.textContent = "";
+    console.log(this.#outputContent);
   }
 }
 
@@ -198,7 +203,6 @@ class Input {
     this.#input.classList.add("locked");
     this.#deleteBtn.classList.add("locked");
     this.#copyBtn.classList.add("locked");
-    // this.#input.readOnly = true;
     this.#content.style.display = "flex";
   }
 
