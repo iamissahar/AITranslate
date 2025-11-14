@@ -13,7 +13,7 @@ Your task is to translate it to your native language naturally, preserving meani
     <div class="meaning-card">
         <div class="context">string (in your native language)</div>
         <div class="translation">string (in your native language)</div>
-        <div class="example">string (in the langauge of the given text)</div>
+        <div class="example">string (in the language of the given text)</div>
     </div>
 </div>
 3. Each value has to be in your native language, exept the example should be in the language the given text in.
