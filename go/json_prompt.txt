@@ -9,11 +9,11 @@ Your task is to translate it to your native language naturally, preserving meani
 1. Respond **only** in valid HTML format (no extra text).
 2. Expected structure:
 <div class="translation-result">
-<div class="part-of-speech">string in %s</div>
+<div class="part-of-speech">one or a few words in %s language</div>
     <div class="meaning-card">
-        <div class="context">string in %s</div>
-        <div class="translation">string in %s</div>
-        <div class="example">a sentence in the user's language within «» that represents the proper use of the user's text, & then a translation within () in %s</div>
+        <div class="context">a word or a sentence in %s language</div>
+        <div class="translation">a word or a sentence in %s language</div>
+        <div class="example">a sentence in the user's language within «» that represents the proper use of the user's text (like an example of usage), & then a translation within () in %s language</div>
     </div>
 </div>
 3. The values of the HTML elements must be in a usual string format, nothing more.
