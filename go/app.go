@@ -28,8 +28,8 @@ const (
 	DEFAULT_SUCCESS_JSON_TRANSLATION string = "{\"ok\": true, \"result\": {\"user_id\": %d, \"text\": %q}}"
 	COMPLETE_ACTION_JSON             string = "{\"id\": %q, \"object\": %q, \"created\" %d, \"model\": %q, \"finish_reason\": %q, \"text\": %q}"
 	INTERNAL_SERVER_ERROR            string = "something went wrong on the service's side"
-	// JSON_PROMPT_PATH                 string = "json_prompt.txt"
-	JSON_PROMPT_PATH      string = "html_prompt.txt"
+	JSON_PROMPT_PATH                 string = "json_prompt.txt"
+	// JSON_PROMPT_PATH      string = "html_prompt.txt"
 	TRANSLATE_PROMPT_PATH string = "translate_prompt.txt"
 	CHAT_MODEL            string = "gpt-4.1-nano"
 )
@@ -448,7 +448,7 @@ func getPayload(lang, text, path string) ([]byte, error) {
 				payload = []byte(fmt.Sprintf(
 					DEFAULT_JSON_WITH_STREAM,
 					Languages[lang][1],
-					fmt.Sprintf(string(filebytes), Languages[lang][0], Languages[lang][0]),
+					fmt.Sprintf(string(filebytes), Languages[lang][0], Languages[lang][0], Languages[lang][0], Languages[lang][0]),
 					text),
 				)
 			} else {
