@@ -16,9 +16,10 @@ Your task is to translate it to your native language naturally, preserving meani
         <div class="example">a sentence in the user's language within «» that represents the proper use of the user's text, & then a translation within () in %s</div>
     </div>
 </div>
-3. Provide between 1 and 5 most popular possible meanings (put them in different meaning-cards in your HTML structure).
-4. If the input is a single word, identify its part(s) of speech.
+3. The values of the HTML elements must be in a usual string format, nothing more.
+4. Provide between 1 and 5 most popular possible meanings (put them in different meaning-cards in your HTML structure).
+5. If the input is a single word, identify its part(s) of speech.
    - Example: "to be" is "verb"
    - Example: "run" is "verb, noun, adjective"
-5. If a word has multiple parts of speech, context or translation join them with commas in one string.
-6. Recheck that your output is valid HTML.
+6. If a word has multiple parts of speech, context or translation join them with commas in one string.
+7. Recheck that your output is valid HTML.
