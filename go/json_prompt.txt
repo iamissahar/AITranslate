@@ -16,7 +16,7 @@ Your task is to translate it to your native language naturally, preserving meani
         <div class="example">string (in the language of the given text)</div>
     </div>
 </div>
-### Example (context: the given text is "Бегать" & your native language is English):
+### Example (context: the given text is "Бегать". The language of the given text is Russian. Your native language is English):
 <div class="translation-result">
 <div class="part-of-speech">Verb</div>
     <div class="meaning-card">
@@ -36,9 +36,9 @@ Your task is to translate it to your native language naturally, preserving meani
     </div>
 </div>
 3. The values of <div class="part-of-speech"></div>, <div class="context"></div> and <div class="translation"></div> should be in your native language. The value of <div class="example"></div> should be in the language of the given text. This rule should be always implemented.
-4. Provide between 1 and 5 possible meanings (put them in different meaning-cards in your HTML structure).
+4. Provide between 1 and 5 most popular possible meanings (put them in different meaning-cards in your HTML structure).
 5. If the input is a single word, identify its part(s) of speech.
    - Example: "to be" is "verb"
    - Example: "run" is "verb, noun, adjective"
-6. If a word has multiple parts of speech, join them with commas in one string.
+6. If a word has multiple parts of speech, context or translation join them with commas in one string.
 7. Recheck that your output is valid HTML.
