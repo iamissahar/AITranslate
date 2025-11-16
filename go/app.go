@@ -447,14 +447,14 @@ func getPayload(lang, text, path string) ([]byte, error) {
 			if path != JSON_PROMPT_PATH {
 				payload = []byte(fmt.Sprintf(
 					DEFAULT_JSON_WITH_STREAM,
-					CHAT_MODEL,
+					Languages[lang][1],
 					fmt.Sprintf(string(filebytes), Languages[lang][0]),
 					text),
 				)
 			} else {
 				payload = []byte(fmt.Sprintf(
 					DEFAULT_JSON_WITHOUT_STREAM,
-					CHAT_MODEL,
+					Languages[lang][1],
 					fmt.Sprintf(string(filebytes), Languages[lang][0]),
 					text,
 				))
