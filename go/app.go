@@ -30,6 +30,7 @@ const (
 	INTERNAL_SERVER_ERROR            string = "something went wrong on the service's side"
 	JSON_PROMPT_PATH                 string = "json_prompt.txt"
 	TRANSLATE_PROMPT_PATH            string = "translate_prompt.txt"
+	CHAT_MODEL                       string = "gpt-4.1-nano"
 )
 
 func errorHandler(userID, errid int, f string, err error) {
@@ -445,14 +446,14 @@ func getPayload(lang, text, path string) ([]byte, error) {
 			if path != JSON_PROMPT_PATH {
 				payload = []byte(fmt.Sprintf(
 					DEFAULT_JSON_WITH_STREAM,
-					Languages[lang][1],
+					CHAT_MODEL,
 					fmt.Sprintf(string(filebytes), Languages[lang][0]),
 					text),
 				)
 			} else {
 				payload = []byte(fmt.Sprintf(
 					DEFAULT_JSON_WITHOUT_STREAM,
-					Languages[lang][1],
+					CHAT_MODEL,
 					fmt.Sprintf(string(filebytes), Languages[lang][0]),
 					text,
 				))
