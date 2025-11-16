@@ -58,15 +58,35 @@ const TEST_HTML = [
     </div>
 </div>`,
 ];
+const CONTEXT_MENU_ID = "ai_translate";
+var contextMenu = false;
 var mainPageID = null;
 var responseFunc = null;
 var controller = null;
 
+function CreateContextMenu() {
+  try {
+    chrome.contextMenus.create({
+      id: CONTEXT_MENU_ID,
+      title: "AI Translate",
+      contexts: ["selection"],
+    });
+  } catch (_) {}
+}
+
+function RemoveContextMenu() {
+  try {
+    chrome.contextMenus.remove(CONTEXT_MENU_ID);
+  } catch (_) {}
+}
+
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.create({
-    id: "ai_translate",
-    title: "AI Translate",
-    contexts: ["selection"],
+  GetSettings().then((settings) => {
+    if (settings && settings.context_menu) {
+      CreateContextMenu();
+    } else if (settings && settings.context_menu === undefined) {
+      CreateContextMenu();
+    }
   });
 
   // chrome.tabs.create({
@@ -310,6 +330,11 @@ async function messageHandler(msg, sender, response) {
     GetSettings().then((settings) => response(settings));
   } else if (msg.action === "save_settings") {
     chrome.storage.local.set({ settings: msg.settings });
+    if (!msg.settings.context_menu) {
+      RemoveContextMenu();
+    } else {
+      CreateContextMenu();
+    }
     response({ null: null });
   } else if (msg.action === "save_language") {
     GetUserID().then((info) => {
@@ -319,6 +344,7 @@ async function messageHandler(msg, sender, response) {
       );
     });
     chrome.storage.local.set({ new_language: msg.language });
+    console.log("the new language is:", msg.language);
     // response({ ok: true });
   }
 }

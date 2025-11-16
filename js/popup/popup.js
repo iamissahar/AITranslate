@@ -81,7 +81,6 @@ class PopupOutput extends Output {
     this.output = document.getElementById("output");
     this.statusMsg = document.getElementById("status_message");
     this.#InitListeners();
-    console.log(this.#outputContent);
   }
 
   Clear() {
@@ -98,39 +97,37 @@ class PopupOutput extends Output {
     this.output.innerText = text;
   }
 
-  #AddJsonStructure(text) {
+  #AddHTMLStructure(text) {
     this.#outputContent.innerHTML = text;
-    // this.output.innerHTML = PopupOutput.#BEFORE + text;
     this.#deleteBtn.classList.add("show");
     this.#copyBtn.classList.add("show");
     input.Complete();
   }
 
   /**@param {string} text  */
-  Add(text) {
+  async Add(text) {
     if (this.isStream) {
       this.#buffer += text;
-      console.log("going to add.");
-      console.log(this.#buffer);
+
       if (this.#buffer.length >= Output.BUFFER_LENGTH + this.#i) {
-        this.#outputContent.innerText = this.#buffer;
-        // this.output.innerText = this.#buffer;
-        this.#i += Output.BUFFER_LENGTH;
+        return new Promise((resolve) => {
+          requestAnimationFrame(() => {
+            this.#outputContent.textContent = this.#buffer;
+            this.#i += Output.BUFFER_LENGTH;
+            resolve();
+          });
+        });
       }
     } else {
-      this.#AddJsonStructure(text);
+      this.#AddHTMLStructure(text);
     }
   }
 
   Flush() {
-    this.#outputContent.innerText = this.#buffer;
-    // this.output.innerText = this.#buffer;
-    // document.getElementById("output_delete").classList.add("show");
-    // document.getElementById("output_copy").classList.add("show");
+    this.#outputContent.textContent = this.#buffer;
     this.#deleteBtn.classList.add("show");
     this.#copyBtn.classList.add("show");
     input.Complete();
-    // this.#buffer = "";
   }
 
   #Delete() {
@@ -384,7 +381,7 @@ class Settings {
 
   async #SaveSettings() {
     var lang,
-      ok = false;
+      ok = true;
 
     lang = await new Promise((resolve) => {
       chrome.runtime.sendMessage({ action: "get_language" }, (res) => {
@@ -392,11 +389,13 @@ class Settings {
       });
     });
 
-    console.log(document.getElementById("settings_dropdown").value);
     if (lang !== document.getElementById("settings_dropdown").value) {
       ok = await new Promise((resolve) => {
         chrome.runtime.sendMessage(
-          { action: "save_language", language: lang },
+          {
+            action: "save_language",
+            language: document.getElementById("settings_dropdown").value,
+          },
           (res) => {
             console.log(res);
             resolve(res.ok || false);
@@ -415,6 +414,8 @@ class Settings {
 
     if (ok) {
       this.#status.innerText = Settings.#SUCCESS;
+      PopulateDropdown(document.getElementById("translate_to_dropdown"));
+      PopulateDropdown(document.getElementById("settings_dropdown"));
     } else {
       this.#status.innerText = Settings.#ERROR;
     }

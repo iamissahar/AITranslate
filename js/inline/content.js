@@ -56,6 +56,7 @@ class InlineOutput extends Output {
 
   Flush() {
     this.#houtput.innerText = this.#buffer;
+    _application.HandleResizing();
     this.output.innerText = this.#buffer;
   }
 
