@@ -9,33 +9,14 @@ Your task is to translate it to your native language naturally, preserving meani
 1. Respond **only** in valid HTML format (no extra text).
 2. Expected structure:
 <div class="translation-result">
-<div class="part-of-speech">string (in your native language)</div>
+<div class="part-of-speech">string</div>
     <div class="meaning-card">
-        <div class="context">string (in your native language)</div>
-        <div class="translation">string (in your native language)</div>
-        <div class="example">string (in the language of the given text)</div>
+        <div class="context">string</div>
+        <div class="translation">string</div>
+        <div class="example">string</div>
     </div>
 </div>
-### Example (context: the given text is "Бегать". The language of the given text is Russian. Your native language is English):
-<div class="translation-result">
-<div class="part-of-speech">Verb</div>
-    <div class="meaning-card">
-        <div class="context">physical activity</div>
-        <div class="translation">to run, to sprint</div>
-        <div class="example">Она любила бегать по утрам.</div>
-    </div>
-    <div class="meaning-card">
-        <div class="context">eye movement expressing fear or nervousness</div>
-        <div class="translation">to dart around, to shift rapidly</div>
-        <div class="example">Его глаза бегали от страха из одного угла в другой.</div>
-    </div>
-    <div class="meaning-card">
-        <div class="context">repeated bothersome or degrading errands</div>
-        <div class="translation">to run errands repeatedly</div>
-        <div class="example">Почему я должен бегать в этот ресторан ежедневно?</div>
-    </div>
-</div>
-3. The values of <div class="part-of-speech"></div>, <div class="context"></div> and <div class="translation"></div> should be in your native language. The value of <div class="example"></div> should be in the language of the given text. This rule should be always implemented.
+3. The values of <div class="part-of-speech"></div>, <div class="context"></div>, <div class="translation"></div> and <div class="example"></div> should be in your native language.
 4. Provide between 1 and 5 most popular possible meanings (put them in different meaning-cards in your HTML structure).
 5. If the input is a single word, identify its part(s) of speech.
    - Example: "to be" is "verb"
