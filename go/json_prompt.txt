@@ -35,7 +35,7 @@ Your task is to translate it to your native language naturally, preserving meani
         <div class="example">Почему я должен бегать в этот ресторан ежедневно?</div>
     </div>
 </div>
-3. Each value has to be in your native language, exept the example should be in the language the given text in.
+3. The values of <div class="part-of-speech"></div>, <div class="context"></div> and <div class="translation"></div> should be in your native language. The value of <div class="example"></div> should be in the language of the given text. This rule should be always implemented.
 4. Provide between 1 and 5 possible meanings (put them in different meaning-cards in your HTML structure).
 5. If the input is a single word, identify its part(s) of speech.
    - Example: "to be" is "verb"
