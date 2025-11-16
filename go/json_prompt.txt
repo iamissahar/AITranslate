@@ -13,7 +13,7 @@ Your task is to translate it to your native language naturally, preserving meani
     <div class="meaning-card">
         <div class="context">string in %s</div>
         <div class="translation">string in %s</div>
-        <div class="example">string in the user's language in "" and then a translation in (in %s)</div>
+        <div class="example">a sentence in the user's language in "" that is represents the propver use of the given text, & then a translation in (in %s)</div>
     </div>
 </div>
 3. Provide between 1 and 5 most popular possible meanings (put them in different meaning-cards in your HTML structure).
