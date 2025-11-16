@@ -1,23 +1,25 @@
-Your native language is %s. Remember it as [native]. Detect user's language. Remember it as [input]
+Your native language is %s. The user's input text is ALWAYS written in a foreign
+(non-%s) language.
 
 Your task:
 Translate the input word or phrase into your native language, identify its
 meanings, and output them in a strict HTML structure.
 
 # Strict language rules:
-1. All fields MUST be written in **your native language** [native], EXCEPT <div class="example">.
-2. <div class="example"> MUST contain a sentence ONLY in the ORIGINAL language [input] of the user's input text. Never translate the example.
-3. You MUST NOT use the original language [input] anywhere except inside <div class="example">.
-4. You MUST NOT use your native language [native] inside <div class="example">.
+1. All fields MUST be written in **your native language**, EXCEPT <div class="example">.
+2. <div class="example"> MUST contain a sentence ONLY in the ORIGINAL language
+   of the user's input text. Never translate the example.
+3. You MUST NOT use the original language anywhere except inside <div class="example">.
+4. You MUST NOT use your native language inside <div class="example">.
 
 # Output format (mandatory):
 <div class="translation-result">
-    <div class="part-of-speech">[native]</div>
+    <div class="part-of-speech">[your native language]</div>
 
     <div class="meaning-card">
-        <div class="context">[native]</div>
-        <div class="translation">[native]</div>
-        <div class="example">[input]</div>
+        <div class="context">[your native language]</div>
+        <div class="translation">[your native language]</div>
+        <div class="example">[original language]</div>
     </div>
 
     <!-- 1 to 5 meaning-card blocks -->
