@@ -455,7 +455,7 @@ func getPayload(lang, text, path string) ([]byte, error) {
 				payload = []byte(fmt.Sprintf(
 					DEFAULT_JSON_WITHOUT_STREAM,
 					Languages[lang][1],
-					fmt.Sprintf(string(filebytes), Languages[lang][0], Languages[lang][0], Languages[lang][0], Languages[lang][0], Languages[lang][0]),
+					fmt.Sprintf(string(filebytes), Languages[lang][0], Languages[lang][0], Languages[lang][0], Languages[lang][0], Languages[lang][0], Languages[lang][0], Languages[lang][0], Languages[lang][0], Languages[lang][0]),
 					text,
 				))
 				fmt.Println(string(payload))
