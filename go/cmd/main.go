@@ -103,6 +103,7 @@ func (api *API) getStream(ctx *gin.Context) {
 		streamer = new(app.Streamer)
 		e        = new(event)
 	)
+	fmt.Println("Hey! Now, it's a stream")
 	e.ch = make(chan string)
 	e.ctx = ctx
 	streamer.Init(e.ch, api.s)

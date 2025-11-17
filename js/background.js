@@ -152,7 +152,7 @@ async function ChangeLanguage(msg, responseF) {
  */
 async function requestResponse(port, msg) {
   try {
-    var signal, response, contenttype, reader, line;
+    var signal, response, contenttype, reader, line, err;
 
     controller = new AbortController();
     signal = controller.signal;
@@ -166,8 +166,9 @@ async function requestResponse(port, msg) {
 
     if (contenttype.includes("application/json")) {
       try {
+        console.log(response);
         err = await response.json();
-        console.error(err);
+        console.warn(err);
         port.postMessage({ ok: false });
       } catch (e) {
         console.error(e);
