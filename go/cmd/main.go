@@ -81,17 +81,21 @@ func (api *API) begin(req *Request, trsl app.Translator, ctx *gin.Context, e *ev
 		err  error
 	)
 	if api.isDataRelevant(req, ctx, true) {
+		fmt.Println("data is relevant")
 		app.CheckUserData(api.s, &req.UserID, req.Lang)
 		if e != nil {
+			fmt.Println("user data is all right start streaming")
 			go trsl.Do(req.UserID, req.Lang, req.Text)
 			ctx.Stream(e.step)
 		} else {
+			fmt.Println("user data is all right start getting html data")
 			res, err = trsl.Do(req.UserID, req.Lang, req.Text)
 			if err != nil {
 				code = http.StatusInternalServerError
 			} else {
 				code = http.StatusOK
 			}
+			fmt.Println("going to send the reponse")
 			ctx.Data(code, "application/json", []byte(res))
 		}
 	}
