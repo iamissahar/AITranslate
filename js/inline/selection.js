@@ -6,14 +6,15 @@ class SelectionHandler {
   #mousePressed = false;
   #clipboardSetup = false;
   #lastClipboardText = null;
+  #isProcessingCopy = false;
   #isGoogleDocs = window.location.href.includes(
     "https://docs.google.com/document",
   );
   #methods = [
-    this.#GoogleDocsDirectDOM.bind(this),
-    this.#GoogleDocsContentExtraction.bind(this),
     this.#DirectSelection.bind(this),
+    this.#GoogleDocsIframeSelection.bind(this),
     this.#ShadowDOMSelection.bind(this),
+    this.#GoogleDocsContentExtraction.bind(this),
   ];
 
   constructor() {
@@ -22,10 +23,10 @@ class SelectionHandler {
 
   /**@returns {Promise<string>} */
   async #GetSelection() {
-    var result, method;
+    let result = "";
 
-    for (method of this.#methods) {
-      if (!result || !result.trim()) {
+    for (const method of this.#methods) {
+      if (!result.trim()) {
         try {
           result = await method();
           if (result && result.trim().length > 0) {
@@ -41,203 +42,135 @@ class SelectionHandler {
 
   /**@returns {Promise<string>} */
   #DirectSelection() {
-    var selection = window.getSelection();
-    var text = selection.toString().trim();
-    return Promise.resolve(text);
+    const selection = window.getSelection();
+    return Promise.resolve(selection.toString().trim());
   }
 
   /**@returns {HTMLDivElement} */
   #CreateOverlay() {
-    var overlay;
-    overlay = document.createElement("div");
+    const overlay = document.createElement("div");
     overlay.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: transparent;
-            z-index: 2147483647;
-            pointer-events: none;
-        `;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: transparent;
+      z-index: 2147483647;
+      pointer-events: none;
+    `;
     document.body.appendChild(overlay);
     return overlay;
   }
 
   /**@returns {Promise<string>} */
   #ShadowDOMSelection() {
-    var overlay, text;
     return new Promise((resolve) => {
-      overlay = this.#CreateOverlay();
+      const overlay = this.#CreateOverlay();
       setTimeout(() => {
-        text = window.getSelection().toString().trim();
+        const text = window.getSelection().toString().trim();
         document.body.removeChild(overlay);
         resolve(text);
-      }, 100);
+      }, 50);
     });
   }
 
   /**@returns {Promise<string>} */
-  #GoogleDocsDirectDOM() {
+  #GoogleDocsIframeSelection() {
     return new Promise((resolve) => {
-      var text = "",
-        iframe,
-        iframes,
-        iframeSelection;
-      if (this.#isGoogleDocs) {
-        try {
-          iframes = document.getElementsByTagName("iframe");
+      if (!this.#isGoogleDocs) {
+        resolve("");
+        return;
+      }
 
-          for (var i = 0; i < iframes.length; i++) {
-            try {
-              iframe = iframes[i];
-              if (iframe.contentDocument && iframe.contentWindow) {
-                iframeSelection = iframe.contentWindow.getSelection();
-                if (iframeSelection && iframeSelection.toString().trim()) {
-                  text = iframeSelection.toString().trim();
-                  if (text) {
-                    resolve(text);
-                  }
-                }
+      let text = "";
+      try {
+        const iframes = document.getElementsByTagName("iframe");
+        for (let i = 0; i < iframes.length; i++) {
+          try {
+            const iframe = iframes[i];
+            if (iframe.contentDocument?.body) {
+              const iframeSelection = iframe.contentWindow.getSelection();
+              const iframeText = iframeSelection?.toString().trim();
+              if (iframeText) {
+                text = iframeText;
+                break;
               }
-
-              if (!text) {
-                try {
-                  iframe.contentDocument.execCommand("copy");
-                } catch (_) {}
-              }
-            } catch (_) {}
-          }
-        } catch (err) {
-          console.warn("Iframe method failed:", e);
+            }
+          } catch (_) {}
         }
+      } catch (err) {
+        console.warn("Iframe method failed:", err);
       }
       resolve(text);
     });
   }
 
   /**@returns {string} */
-  #ExtractTextFromNode() {
-    var text = "",
-      style;
+  #ExtractTextFromNode(node) {
+    let text = "";
+
     if (node.nodeType === Node.TEXT_NODE) {
       text = node.textContent || "";
     } else if (node.nodeType === Node.ELEMENT_NODE) {
-    }
+      const style = window.getComputedStyle(node);
+      const isVisible =
+        style.display !== "none" &&
+        style.visibility !== "hidden" &&
+        style.opacity !== "0";
 
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      style = window.getComputedStyle(node);
-      if (
-        style.display !== "none" ||
-        style.visibility !== "hidden" ||
-        style.opacity !== "0"
-      ) {
-        if (
-          style.backgroundColor &&
-          style.backgroundColor !== "rgba(0, 0, 0, 0)" &&
-          style.backgroundColor !== "transparent"
-        ) {
+      if (isVisible) {
+        if (node.childNodes.length > 0) {
+          for (const child of node.childNodes) {
+            text += this.#ExtractTextFromNode(child);
+          }
+        } else {
           text += node.textContent + " ";
         }
-
-        for (var child of node.childNodes) {
-          text += this.#ExtractTextFromNode(child);
-        }
       }
     }
 
-    return text;
-  }
-
-  #FindSelectedTextInDOM() {
-    var text = "",
-      selection,
-      range,
-      selectedText,
-      highlightedElements,
-      highlightedText = "",
-      style;
-    try {
-      selection = window.getSelection();
-      if (selection.rangeCount > 0) {
-        range = selection.getRangeAt(0);
-        selectedText = range.toString().trim();
-        if (selectedText) text = selectedText;
-      }
-    } catch (e) {}
-
-    if (!text) {
-      try {
-        highlightedElements = document.querySelectorAll("*");
-
-        for (var element of highlightedElements) {
-          try {
-            style = window.getComputedStyle(element);
-            if (
-              style.backgroundColor &&
-              !style.backgroundColor.includes("rgba(0, 0, 0, 0)") &&
-              style.backgroundColor !== "transparent" &&
-              element.textContent &&
-              element.textContent.trim()
-            ) {
-              highlightedText += element.textContent + " ";
-            }
-          } catch (_) {}
-        }
-
-        text = highlightedText.trim();
-      } catch (e) {
-        text = "";
-      }
-    }
     return text;
   }
 
   #GoogleDocsContentExtraction() {
     return new Promise((resolve) => {
-      var text = "",
-        allText = "",
-        textElements,
-        iframeText,
-        elementText,
-        standardSelection;
-      if (this.#isGoogleDocs) {
-        try {
-          textElements = document.querySelectorAll(
-            [
-              ".kix-paragraphrenderer",
-              ".kix-lineview-text",
-              '[role="textbox"]',
-              '[contenteditable="true"]',
-              ".docs-texteventtarget-iframe",
-              ".kix-page-content-wrapper",
-              ".kix-page",
-            ].join(","),
-          );
+      if (!this.#isGoogleDocs) {
+        resolve("");
+        return;
+      }
 
-          for (var element of textElements) {
-            try {
-              if (element.tagName === "IFRAME" && element.contentDocument) {
-                iframeText = this.#ExtractTextFromNode(
-                  element.contentDocument.body,
-                );
-                if (iframeText) allText += iframeText + "\n";
-              } else {
-                elementText = this.#ExtractTextFromNode(element);
-                if (elementText) allText += elementText + "\n";
-              }
-            } catch (_) {}
-          }
+      let text = "";
+      try {
+        const textElements = document.querySelectorAll(
+          [
+            ".kix-paragraphrenderer",
+            ".kix-lineview-text",
+            '[role="textbox"]',
+            '[contenteditable="true"]',
+            ".docs-texteventtarget-iframe",
+            ".kix-page-content-wrapper",
+            ".kix-page",
+          ].join(","),
+        );
 
-          standardSelection = window.getSelection().toString().trim();
-          if (standardSelection) {
-            text = standardSelection;
-          } else if (allText.trim()) {
-            text = this.#FindSelectedTextInDOM(allText);
-          }
-        } catch (err) {
-          console.warn("DOM extraction failed:", e);
+        for (const element of textElements) {
+          try {
+            if (element.tagName === "IFRAME" && element.contentDocument) {
+              const iframeText = this.#ExtractTextFromNode(
+                element.contentDocument.body,
+              );
+              if (iframeText) text += iframeText + "\n";
+            } else {
+              const elementText = this.#ExtractTextFromNode(element);
+              if (elementText) text += elementText + "\n";
+            }
+          } catch (_) {}
         }
+
+        text = text.trim();
+      } catch (err) {
+        console.warn("DOM extraction failed:", err);
       }
       resolve(text);
     });
@@ -250,44 +183,84 @@ class SelectionHandler {
       document.addEventListener(
         "copy",
         (e) => {
-          try {
-            var selection = window.getSelection().toString().trim();
+          if (this.#isProcessingCopy) {
+            // Это наше копирование - перехватываем данные
+            const selection = window.getSelection().toString().trim();
             if (selection) {
               this.#lastClipboardText = selection;
+              e.clipboardData.setData("text/plain", selection);
+              e.preventDefault();
             }
-          } catch (e) {}
+          }
         },
         true,
       );
     }
   }
 
-  async #Pull() {
-    var txt;
+  /** Безопасное копирование с сохранением буфера */
+  async #safeCopyWithRestoration() {
+    if (this.#isProcessingCopy) return null;
 
-    if (this.#isGoogleDocs) {
-      this.#SetupClipboardInterceptor();
+    this.#isProcessingCopy = true;
+    this.#lastClipboardText = null;
+    let oldClipboard = null;
 
+    try {
+      // Сохраняем текущий буфер
       try {
-        document.execCommand("copy");
-      } catch (e) {}
-
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      if (this.#lastClipboardText) {
-        txt = this.#lastClipboardText;
-        this.#lastClipboardText = null;
+        oldClipboard = await navigator.clipboard.readText();
+      } catch (e) {
+        console.warn("Failed to read clipboard:", e);
       }
-    }
 
-    if (!txt) {
-      txt = await this.#GetSelection();
+      // Выполняем копирование
+      document.execCommand("copy");
+
+      // Ждем пока перехватчик получит данные
+      await new Promise((resolve) => setTimeout(resolve, 20));
+
+      const copiedText = this.#lastClipboardText;
+
+      // Восстанавливаем оригинальный буфер
+      if (oldClipboard !== null) {
+        try {
+          await navigator.clipboard.writeText(oldClipboard);
+        } catch (e) {
+          console.warn("Failed to restore clipboard:", e);
+        }
+      }
+
+      return copiedText;
+    } catch (e) {
+      console.warn("Safe copy failed:", e);
+      return null;
+    } finally {
+      this.#isProcessingCopy = false;
+    }
+  }
+
+  /** Умный Pull с оптимизацией для Google Docs */
+  async #Pull() {
+    // Пропускаем если уже обрабатываем копирование
+    if (this.#isProcessingCopy) return;
+
+    let txt = "";
+
+    // Сначала пробуем стандартные методы
+    txt = await this.#GetSelection();
+
+    // Для Google Docs используем безопасное копирование только если другие методы не сработали
+    if (this.#isGoogleDocs && (!txt || !txt.trim())) {
+      this.#SetupClipboardInterceptor();
+      txt = await this.#safeCopyWithRestoration();
     }
 
     if (txt && txt.trim() && this.#lasttext !== txt) {
       this.#text = txt;
       this.#lasttext = txt;
 
+      // Активируем функциональность если нужно
       // if (goBtn && goBtn.Activate) {
       //   goBtn.Activate();
       // }
@@ -299,7 +272,7 @@ class SelectionHandler {
   }
 
   async #SelectionChange() {
-    if (!this.#mousePressed) {
+    if (!this.#mousePressed && !this.#isProcessingCopy) {
       if (this.#isGoogleDocs) {
         setTimeout(() => this.#Pull(), 100);
       } else {
@@ -319,37 +292,45 @@ class SelectionHandler {
     this.#mousePressed = false;
     this.#usedMouse = true;
 
-    if (this.#isGoogleDocs) {
-      setTimeout(() => this.#Pull(), 150);
-    } else {
-      this.#Pull();
+    if (!this.#isProcessingCopy) {
+      if (this.#isGoogleDocs) {
+        setTimeout(() => this.#Pull(), 150);
+      } else {
+        this.#Pull();
+      }
     }
   }
 
   #SetUpEventListeners() {
-    window.addEventListener(
-      "selectionchange",
-      this.#SelectionChange.bind(this),
-    );
+    // Дебаунсим selectionchange для оптимизации
+    let selectionChangeTimeout;
+    const debouncedSelectionChange = () => {
+      clearTimeout(selectionChangeTimeout);
+      selectionChangeTimeout = setTimeout(() => {
+        this.#SelectionChange();
+      }, 50);
+    };
+
+    window.addEventListener("selectionchange", debouncedSelectionChange);
 
     if (this.#isGoogleDocs) {
-      document.addEventListener("click", () => {
-        setTimeout(() => this.#Pull(), 200);
-      });
+      // Дебаунсим события в Google Docs
+      let docsTimeout;
+      const debouncedPull = () => {
+        clearTimeout(docsTimeout);
+        docsTimeout = setTimeout(() => this.#Pull(), 200);
+      };
 
-      document.addEventListener("mouseup", () => {
-        setTimeout(() => this.#Pull(), 200);
-      });
+      document.addEventListener("click", debouncedPull);
+      document.addEventListener("mouseup", debouncedPull);
+      document.addEventListener("keyup", debouncedPull);
 
-      document.addEventListener("keyup", () => {
-        setTimeout(() => this.#Pull(), 200);
-      });
-
+      // Увеличиваем интервал для периодической проверки
       setInterval(() => {
-        if (!this.#mousePressed) {
+        if (!this.#mousePressed && !this.#isProcessingCopy) {
           this.#Pull();
         }
-      }, 300);
+      }, 1000);
     } else {
       document.addEventListener("mousedown", this.#MouseDown.bind(this));
       document.addEventListener("mouseup", (e) => this.#MouseUp(e));
@@ -362,12 +343,10 @@ class SelectionHandler {
 
   /**@returns {{ ok: boolean; coordinates: { x: number; y: number } | null }} */
   GetCoordinates() {
-    var res = { ok: false, coordinates: null };
-    if (this.#usedMouse) {
-      res.ok = this.#usedMouse;
-      res.coordinates = this.#coordinates;
-    }
-    return res;
+    return {
+      ok: this.#usedMouse,
+      coordinates: this.#usedMouse ? this.#coordinates : null,
+    };
   }
 
   async ForceUpdate() {
@@ -375,4 +354,5 @@ class SelectionHandler {
   }
 }
 
+// Создаем экземпляр
 var sh = new SelectionHandler();

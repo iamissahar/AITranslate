@@ -59,7 +59,7 @@ class GoogleDriveButton {
     this.#btn.style.width = rect.width + "px";
     this.#btn.style.height = rect.height + "px";
     this.#btn.addEventListener("click", () => {
-      Begin(GOOGLE_DRIVE);
+      Begin(sh.GetText(), GOOGLE_DRIVE);
     });
 
     bubble.insertBefore(this.#el, bubble.firstChild);

@@ -89,9 +89,9 @@ chrome.runtime.onInstalled.addListener(() => {
     }
   });
 
-  // chrome.tabs.create({
-  //   url: chrome.runtime.getURL("html/welcome.html"),
-  // });
+  chrome.tabs.create({
+    url: chrome.runtime.getURL("html/welcome.html"),
+  });
 });
 
 chrome.contextMenus.onClicked.addListener(function (info, tab) {
@@ -346,6 +346,16 @@ async function messageHandler(msg, sender, response) {
     chrome.storage.local.set({ new_language: msg.language });
     console.log("the new language is:", msg.language);
     // response({ ok: true });
+  } else if (msg.action === "read_clipboard") {
+    navigator.clipboard
+      .readText()
+      .then((text) => response(text))
+      .catch(() => response(""));
+  } else if (msg.action === "write_clipboard") {
+    navigator.clipboard
+      .writeText(msg.text)
+      .then(() => response({ null: null }))
+      .catch(() => response({ null: null }));
   }
 }
 

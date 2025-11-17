@@ -254,6 +254,7 @@ class Application {
 
   #GoogleDriveAppearance() {
     var canvas, rect, ratio, margin;
+    console.log("google_drive appearance");
     canvas = document.querySelector(".canvas-first-page");
     if (canvas) {
       rect = canvas.getBoundingClientRect();
@@ -330,7 +331,7 @@ class Application {
 
     if (this.#text) {
       this.#AppearHidden(this.#text);
-      if (this.#IsShowable(selection) === true) {
+      if (this.#IsShowable(selection)) {
         this.#DefaultAppearance(selection);
         Translate(this.#output, this.#text);
       } else {

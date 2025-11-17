@@ -204,9 +204,9 @@ func startAPI() {
 		MaxAge:           12 * 3600,
 	}))
 	//old version
-	stream(router)
-	changeTheLanguage(router)
-	oneWord(router)
+	// stream(router)
+	// changeTheLanguage(router)
+	// oneWord(router)
 	//new version
 	api = new(API)
 	s = new(storage.Storage)
