@@ -16,7 +16,7 @@ type API struct {
 }
 
 type Request struct {
-	UserID int    `json:"user_id"`
+	UserID *int   `json:"user_id"`
 	Lang   string `json:"lang_code"`
 	Text   string `json:"text"`
 }
@@ -82,14 +82,14 @@ func (api *API) begin(req *Request, trsl app.Translator, ctx *gin.Context, e *ev
 	)
 	if api.isDataRelevant(req, ctx, true) {
 		fmt.Println("data is relevant")
-		app.CheckUserData(api.s, &req.UserID, req.Lang)
+		app.CheckUserData(api.s, req.UserID, req.Lang)
 		if e != nil {
 			fmt.Println("user data is all right start streaming")
-			go trsl.Do(req.UserID, req.Lang, req.Text)
+			go trsl.Do(*req.UserID, req.Lang, req.Text)
 			ctx.Stream(e.step)
 		} else {
 			fmt.Println("user data is all right start getting html data")
-			res, err = trsl.Do(req.UserID, req.Lang, req.Text)
+			res, err = trsl.Do(*req.UserID, req.Lang, req.Text)
 			if err != nil {
 				code = http.StatusInternalServerError
 			} else {
@@ -126,8 +126,8 @@ func (api *API) getJson(ctx *gin.Context) {
 func (api *API) changeLanguage(ctx *gin.Context) {
 	var req = new(Request)
 	if api.isDataRelevant(req, ctx, false) {
-		app.CheckUserData(api.s, &req.UserID, req.Lang)
-		api.s.ChangeLanguage(req.UserID, req.Lang)
+		app.CheckUserData(api.s, req.UserID, req.Lang)
+		api.s.ChangeLanguage(*req.UserID, req.Lang)
 		ctx.Data(http.StatusOK, "application/json", []byte(fmt.Sprintf(app.DEFAULT_SUCCESS_JSON, req.UserID)))
 	}
 }
