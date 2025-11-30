@@ -659,7 +659,7 @@ func (dl *Deepl) Do(userID int, source, target, text string) (string, error) {
 		payload = []byte(fmt.Sprintf("{\"text\": [%q], \"target_lang\": %q}", text, target))
 	}
 
-	rs, err = requestAI(payload, "https://api.deepl.com/v2/translate", "DeepL-Auth-Key "+os.Getenv("DEEPL_AUTH_KEY"))
+	rs, err = requestAI(payload, "https://api-free.deepl.com/v2/translate", "DeepL-Auth-Key "+os.Getenv("DEEPL_AUTH_KEY"))
 	if err == nil {
 		dlrs = new(DeepLResponse)
 		err = json.NewDecoder(rs.Body).Decode(dlrs)
