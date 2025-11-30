@@ -664,7 +664,7 @@ func (dl *Deepl) Do(userID int, source, target, text string) (string, error) {
 		fmt.Println("requested without an error")
 		dlrs = new(DeepLResponse)
 		err = json.NewDecoder(rs.Body).Decode(dlrs)
-		if err != nil {
+		if err == nil {
 			fmt.Println("successfuly decoded")
 			if len(dlrs.Translations) > 0 {
 				fmt.Println("result is valid")
