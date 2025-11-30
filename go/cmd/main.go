@@ -108,7 +108,7 @@ func (api *API) begin(req *Request, trsl app.Translator, ctx *gin.Context, e *ev
 			} else {
 				code = http.StatusOK
 			}
-			fmt.Println("going to send the reponse")
+			fmt.Println("going to send the response: ", res)
 			ctx.Data(code, "application/json", []byte(res))
 
 		}
