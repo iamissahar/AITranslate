@@ -661,12 +661,16 @@ func (dl *Deepl) Do(userID int, source, target, text string) (string, error) {
 
 	rs, err = requestAI(payload, "https://api-free.deepl.com/v2/translate", "DeepL-Auth-Key "+os.Getenv("DEEPL_AUTH_KEY"))
 	if err == nil {
+		fmt.Println("requested without an error")
 		dlrs = new(DeepLResponse)
 		err = json.NewDecoder(rs.Body).Decode(dlrs)
 		if err != nil {
+			fmt.Println("successfuly decoded")
 			if len(dlrs.Translations) > 0 {
+				fmt.Println("result is valid")
 				res = fmt.Sprintf("{\"ok\": true, \"result\": {\"user_id\": %d, \"source_lang\": %q, \"text\": %q}}", userID, dlrs.Translations[0].Source, dlrs.Translations[0].Text)
 			} else {
+				fmt.Println("result is not valid")
 				err = fmt.Errorf("invalid response from deepl api.")
 			}
 		}
