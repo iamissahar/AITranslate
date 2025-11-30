@@ -89,9 +89,9 @@ chrome.runtime.onInstalled.addListener(() => {
     }
   });
 
-  chrome.tabs.create({
-    url: chrome.runtime.getURL("html/welcome.html"),
-  });
+  // chrome.tabs.create({
+  //   url: chrome.runtime.getURL("html/welcome.html"),
+  // });
 });
 
 chrome.contextMenus.onClicked.addListener(function (info, tab) {
@@ -283,13 +283,12 @@ async function GetUserID() {
 
 async function GetLangauge() {
   var lang = await new Promise((resolve) => {
-    chrome.storage.local.get(["new_language"], (result) => {
+    chrome.storage.local.get(["settings_target_lang"], (result) => {
       resolve({
-        language: result.new_language || navigator.language.slice(0, 2),
+        language: result.settings_target_lang || navigator.language.slice(0, 2),
       });
     });
   });
-  console.log("[DEBUG] language:", lang);
   return lang;
 }
 
@@ -301,6 +300,27 @@ async function GetSettings() {
     });
   });
   return settings;
+}
+
+async function DeepLTranslate(msg, responsef) {
+  try {
+    const response = await fetch(DOMAIN + "/ai_translate/v2/translate/deepl", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(msg),
+    });
+    const data = await response.json();
+    if (data && data.ok) {
+      responsef(data);
+    } else if (data && !data.ok) {
+      responsef(data);
+    }
+  } catch (err) {
+    responsef({
+      ok: false,
+      result: { user_id: msg.user_id, error: err.toString() },
+    });
+  }
 }
 
 async function messageHandler(msg, sender, response) {
@@ -357,6 +377,18 @@ async function messageHandler(msg, sender, response) {
       .writeText(msg.text)
       .then(() => response({ null: null }))
       .catch(() => response({ null: null }));
+  } else if (msg.action === "deepl_translation") {
+    DeepLTranslate(msg.data, response);
+  } else if (msg.action === "deepl_translation_test") {
+    await sleep(599);
+    response({
+      ok: true,
+      result: {
+        user_id: msg.user_id,
+        source_lang: "ru",
+        text: Math.random().toString(36).slice(2, 10),
+      },
+    });
   }
 }
 

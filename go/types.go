@@ -46,7 +46,7 @@ Before outputting, double-check:
 - Output must be only valid JSON, without any explanation or extra text.
 If any rule is broken — fix it automatically before sending.`
 
-	url                string = "https://api.openai.com/v1/chat/completions"
+	// url                string = "https://api.openai.com/v1/chat/completions"
 	model              string = "gpt-3.5-turbo"
 	response           string = "response"
 	database           string = "database"
@@ -65,7 +65,7 @@ var (
 )
 
 type Translator interface {
-	Do(userID int, lang, text string) (string, error)
+	Do(userID int, source, target, text string) (string, error)
 }
 
 type Streamer struct {
@@ -74,6 +74,10 @@ type Streamer struct {
 }
 
 type Jsoner struct {
+	s *storage.Storage
+}
+
+type Deepl struct {
 	s *storage.Storage
 }
 

@@ -8,24 +8,21 @@
     "storage",
     "contextMenus",
     "clipboardWrite",
-    "clipboardRead",
-    "offscreen",
-    "scripting",
-    "webNavigation"
+    "clipboardRead"
   ],
   "background": {
     "service_worker": "js/background.js",
     "type": "module"
   },
   "icons": {
-    "16": "icons/menu_logo.png",
-    "128": "icons/logo_128x128.png"
+    "16": "icons/logoV2_16.png",
+    "128": "icons/logoV2_128.png"
   },
   "action": {
-    "default_popup": "html/popup.html",
+    "default_popup": "html/_new.html",
     "default_icon": {
-      "48": "icons/very_small_logo.png",
-      "128": "icons/logo_128x128.png"
+      "48": "icons/logoV2_48.png",
+      "128": "icons/logoV2_128.png"
     }
   },
   "content_scripts": [

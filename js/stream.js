@@ -150,19 +150,19 @@ class Stream {
       queue: new Queue(),
       user_id: await new Promise((resolve) => {
         chrome.runtime.sendMessage({ action: "get_user_id" }, (msg) => {
-          resolve(msg.user_id || "");
+          resolve(msg.user_id || 0);
         });
       }),
       language: await new Promise((resolve) => {
         chrome.runtime.sendMessage({ action: "get_language" }, (msg) => {
-          resolve(msg.language || "");
+          resolve(msg.language || "en");
         });
       }),
     };
 
     this.port.postMessage({
       user_id: data.user_id,
-      lang_code: data.language,
+      target_lang: data.language,
       text: text,
     });
 

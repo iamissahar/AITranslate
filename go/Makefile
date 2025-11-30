@@ -2,21 +2,21 @@ include .env
 export
 
 net:
-	docker network create ai_translate-network
+	docker network create ai_translate_v2-network
 
 build.app:
-	docker build -f Dockerfile.app -t ai_translate .
+	docker build -f Dockerfile.app -t ai_translate_v2 .
 
 build.db:
-	docker build -f Dockerfile.db -t ai_translate-postgres .
+	docker build -f Dockerfile.db -t ai_translate_v2-postgres .
 
 run.app:
-	docker run -d --rm --name ai_translate-container \
-	--network ai_translate-network \
+	docker run -d --rm --name ai_translate_v2-container \
+	--network ai_translate_v2-network \
 	-v /etc/letsencrypt/live/nathanissahar.me/fullchain.pem:/certs/fullchain.pem:ro \
   	-v /etc/letsencrypt/live/nathanissahar.me/privkey.pem:/certs/privkey.pem:ro \
-	-p 4200:4200 \
-	-e host_db=ai_translate-postgres-container \
+	-p 4222:4222 \
+	-e host_db=ai_translate_v2-postgres-container \
 	-e port_db=5432 \
 	-e user_db=postgres \
 	-e password_db=postgres \
@@ -27,7 +27,8 @@ run.app:
 	-e email_to=$(email_to) \
 	-e email_password=$(email_password) \
 	-e email_host=$(email_host) \
-	ai_translate
+	-e DEEPL_AUTH_KEY=$(DEEPL_AUTH_KEY) \
+	ai_translate_v2
 
 rungo:
 	host_db=localhost \
@@ -44,30 +45,30 @@ rungo:
 	go run ./cmd
 
 run.db:
-	docker run -d --rm --name ai_translate-postgres-container \
-	--network ai_translate-network \
+	docker run -d --rm --name ai_translate_v2-postgres-container \
+	--network ai_translate_v2-network \
 	-e POSTGRES_USER=postgres \
 	-e POSTGRES_PASSWORD=postgres \
 	-e POSTGRES_DB=postgres \
 	-v ./postgres/create.sql:/docker-entrypoint-initdb.d/c \
 	-v ./pgdata:/var/lib/postgresql/data \
-	ai_translate-postgres
+	ai_translate_v2-postgres
 
 
 del.db:
-	docker stop ai_translate-postgres-container
+	docker stop ai_translate_v2-postgres-container
 	sudo rm -rf ./pgdata
 
 del.app:
-	docker stop ai_translate-container
-	docker rm ai_translate-container
+	docker stop ai_translate_v2-container
+	docker rm ai_translate_v2-container
 
 reboot:
-	docker stop ai_translate-container
-	docker rm ai_translate-container
-	docker build -f Dockerfile.app -t ai_translate .
-	docker run -d --name ai_translate-container \
-	--network ai_translate-network \
+	docker stop ai_translate_v2-container
+	docker rm ai_translate_v2-container
+	docker build -f Dockerfile.app -t ai_translate_v2 .
+	docker run -d --name ai_translate_v2-container \
+	--network ai_translate_v2-network \
 	-p 8080:8080 \
 	-e host_db=st-postgres-container \
 	-e port_db=5432 \

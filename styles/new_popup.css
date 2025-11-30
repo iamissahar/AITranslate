@@ -1,0 +1,460 @@
+:root {
+    --deepl-bg: #ffffff;
+    --deepl-border: #e5e7eb;
+    --deepl-text: #1f2937;
+    --deepl-text-light: #6b7280;
+    --deepl-accent: #4f46e5;
+    --deepl-hover: #eef2ff;
+}
+
+body {
+    margin: 0;
+    width: 620px;
+    height: 350px;
+    font-family: "Inter", system-ui, sans-serif;
+    background: var(--deepl-bg);
+    color: var(--deepl-text);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.settings-btn {
+    position: absolute;
+    top: 15px;
+    right: 10px;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+.settings-btn:hover {
+    background: var(--deepl-hover);
+}
+
+.settings-btn img {
+    width: 20px;
+    height: 20px;
+    opacity: 0.7;
+}
+
+.lang-selector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 12px 16px;
+    background: #f9fafb;
+    border-bottom: 1px solid var(--deepl-border);
+}
+
+.lang-box {
+    position: relative;
+    width: 175px;
+}
+
+.switch-lang {
+    flex: 0 0 auto;
+}
+
+.language-list {
+    display: none;
+    position: absolute;
+    left: 90px;
+    top: 55px;
+    max-height: 260px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    padding: 6px 0;
+    z-index: 50;
+}
+
+.language-list.shown {
+    display: flex;
+}
+
+.language-list.settings {
+    left: 130px;
+    top: 166px;
+    max-height: 160px;
+}
+
+.list-right,
+.list-left {
+    padding: 0;
+}
+
+.lang-opt {
+    display: flex;
+    gap: 5px;
+    width: 200px;
+    padding: 8px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    color: #1f2937;
+}
+
+.lang-opt:hover {
+    background: var(--deepl-hover);
+}
+
+.lang-opt img {
+    display: none;
+    width: 15px;
+    height: 15px;
+}
+
+.lang-opt img.shown {
+    display: block;
+}
+
+.list-left {
+    display: block;
+}
+
+.lang-select {
+    width: 150px;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    border: 1px solid var(--deepl-border);
+    border-radius: 8px;
+    background: white;
+    appearance: none;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    transition:
+        background 0.15s,
+        border-color 0.15s;
+}
+
+.lang-select:active {
+    background: #eef2ff;
+    border-color: var(--deepl-accent);
+}
+
+.lang-select.active {
+    background: var(--deepl-hover);
+    border-color: var(--deepl-accent);
+}
+
+.switch-lang {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    min-height: 38px;
+    background: white;
+    border: 1px solid var(--deepl-border);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition:
+        background 0.2s,
+        border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.switch-lang svg {
+    width: 20px;
+    height: 20px;
+    pointer-events: none;
+}
+
+.switch-lang:hover {
+    background: var(--deepl-hover);
+    border-color: var(--deepl-accent);
+}
+
+/*.switch-lang svg {
+    width: 20px;
+    height: 20px;
+    stroke: #4f46e5;
+}*/
+
+/* === Основная область === */
+.main {
+    flex: 1;
+    display: flex;
+    /*flex-direction: column;*/
+    background: var(--deepl-bg);
+    height: 80%;
+    padding: 0 10px 10px;
+}
+
+.textarea-container {
+    flex: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Убираем настоящую границу */
+.textarea-container.focused {
+    border: none;
+}
+
+/* Рисуем границу поверх */
+.textarea-container::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    pointer-events: none;
+}
+
+.textarea-container.focused::after {
+    border-color: var(--deepl-accent);
+}
+textarea {
+    flex: 1;
+    padding: 20px;
+    border: none;
+    outline: none;
+    resize: none;
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 1.6;
+    background: transparent;
+}
+
+#input {
+    color: var(--deepl-text);
+}
+
+#output {
+    color: var(--deepl-text);
+    background: #f8f9ff; /* лёгкий фон для результата, как у DeepL */
+}
+
+.placeholder-text {
+    display: none;
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    color: #9ca3af;
+    pointer-events: none;
+    font-size: 16px;
+}
+
+.placeholder-text.shown {
+    display: block;
+}
+
+/* Нижняя панель с кнопками */
+.bottom-bar {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    /*background: #fafafa;*/
+}
+
+.actions {
+    display: flex;
+    gap: 12px;
+}
+
+.action-btn {
+    padding: 6px;
+    border-radius: 6px;
+    transition: background 0.2s;
+
+    pointer-events: none;
+    cursor: default;
+    opacity: 0.5;
+}
+
+.action-btn.available {
+    pointer-events: auto;
+    cursor: pointer;
+    opacity: 1;
+}
+
+.action-btn:hover {
+    background: var(--deepl-hover);
+}
+
+.action-btn img {
+    width: 20px;
+    height: 20px;
+    opacity: 0.65;
+}
+
+.action-btn.copied img {
+    filter: brightness(0) saturate(100%) invert(35%) sepia(82%) saturate(7498%)
+        hue-rotate(243deg) brightness(99%) contrast(101%);
+}
+
+/*.action-btn.arrows {
+    opacity: 0.5;
+    cursor: unset;
+}*/
+
+.output-text {
+    opacity: 0;
+    animation: fadeIn 0.3s forwards;
+}
+
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+    }
+}
+/* === Settings Slide === */
+.settings-slide {
+    position: absolute;
+    top: 0;
+    left: 100%;
+    width: 100%;
+    height: 100%;
+    background-color: var(--deepl-bg);
+    border-radius: 12px;
+    padding: 20px;
+    box-sizing: border-box;
+    transition: left 0.3s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.settings-slide.active {
+    left: 0;
+}
+
+/* Header */
+.settings-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.back-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.back-btn img {
+    width: 20px;
+    height: 20px;
+}
+
+.slide-title {
+    font-weight: 600;
+    font-size: 18px;
+    color: var(--deepl-text);
+}
+
+/* Options */
+.settings-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+}
+
+.settings-option span,
+.settings-option label {
+    font-size: 14px;
+    color: var(--deepl-text);
+}
+
+/* Select */
+.settings-option select {
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--deepl-border);
+    font-size: 14px;
+    background-color: #f9fafb;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.settings-option select:hover {
+    border-color: var(--deepl-accent);
+}
+
+/* Switch */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #e5e7eb;
+    border-radius: 24px;
+    transition: all 0.3s;
+}
+
+.slider::before {
+    content: "";
+    position: absolute;
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    border-radius: 50%;
+    transition: transform 0.3s;
+}
+
+input:checked + .slider {
+    background-color: var(--deepl-accent);
+}
+
+input:checked + .slider::before {
+    transform: translateX(20px);
+}
+
+/* Save Button */
+.settings-actions {
+    margin-top: auto;
+}
+
+.save-btn {
+    width: 100%;
+    height: 36px;
+    border-radius: 10px;
+    border: none;
+    background-color: var(--deepl-accent);
+    color: #ffffff;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.save-btn:hover {
+    background-color: #4338ca;
+}

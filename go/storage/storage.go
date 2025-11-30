@@ -36,7 +36,7 @@ func (s *Storage) IsNewUser(userID int) bool {
 	return res
 }
 
-func (s *Storage) NewUser(lang string) int {
+func (s *Storage) NewUser() int {
 	var (
 		userID int
 		err    error
@@ -46,7 +46,7 @@ func (s *Storage) NewUser(lang string) int {
 		if err != nil {
 			s.recovery(userID, 1, "storage.NewUser(lang string) int", err)
 		} else {
-			_, err = s.db.Exec("INSERT INTO UsersV2 (id, language) VALUES ($1, $2)", userID, lang)
+			_, err = s.db.Exec("INSERT INTO UsersV2 (id) VALUES ($1)", userID)
 			if err != nil {
 				s.recovery(userID, 2, "storage.NewUser(lang string) int", err)
 			}

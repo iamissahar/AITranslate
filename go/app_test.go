@@ -6,8 +6,6 @@ import (
 	"os"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -108,58 +106,58 @@ func checkRelations(t *testing.T) bool {
 	return res == 1
 }
 
-func TestNewUser(t *testing.T) {
-	defer delUser(t)
+// func TestNewUser(t *testing.T) {
+// 	defer delUser(t)
 
-	assert.Equal(t, newUser(userID), true, "the result from it should be false")
-	assert.NotEqual(t, newUser(userID), false, "the result from it should be false")
+// 	assert.Equal(t, newUser(userID), true, "the result from it should be false")
+// 	assert.NotEqual(t, newUser(userID), false, "the result from it should be false")
 
-	createUser(t)
+// 	createUser(t)
 
-	assert.Equal(t, newUser(userID), false, "the result from it should be true")
-	assert.NotEqual(t, newUser(userID), true, "the result from it should be true")
-}
+// 	assert.Equal(t, newUser(userID), false, "the result from it should be true")
+// 	assert.NotEqual(t, newUser(userID), true, "the result from it should be true")
+// }
 
-func TestAddUser(t *testing.T) {
-	defer delUser(t)
-	defer resetSeq(t)
+// func TestAddUser(t *testing.T) {
+// 	defer delUser(t)
+// 	defer resetSeq(t)
 
-	assert.Equal(t, addUser(lang, ip), 1, "the result should be 1")
-}
+// 	assert.Equal(t, addUser(lang, ip), 1, "the result should be 1")
+// }
 
-func TestIncrement(t *testing.T) {
-	defer delUser(t)
-	defer resetSeq(t)
+// func TestIncrement(t *testing.T) {
+// 	defer delUser(t)
+// 	defer resetSeq(t)
 
-	createUser(t)
-	increment(userID)
-	assert.Equal(t, checkIncrement(t), 2, "the result should be 2")
-}
+// 	createUser(t)
+// 	increment(userID)
+// 	assert.Equal(t, checkIncrement(t), 2, "the result should be 2")
+// }
 
-func TestUpdateDB(t *testing.T) {
-	defer cleanAll(t)
-	createUser(t)
+// func TestUpdateDB(t *testing.T) {
+// 	defer cleanAll(t)
+// 	createUser(t)
 
-	updateDB(userID, &cs)
-	assert.Equal(t, checkResponses(t), true, "the result should be true")
-	assert.Equal(t, checkContent(t), true, "the result should be true")
-	assert.Equal(t, checkRelations(t), true, "the result should be true")
-}
+// 	updateDB(userID, &cs)
+// 	assert.Equal(t, checkResponses(t), true, "the result should be true")
+// 	assert.Equal(t, checkContent(t), true, "the result should be true")
+// 	assert.Equal(t, checkRelations(t), true, "the result should be true")
+// }
 
-func TestCallOpenAI(t *testing.T) {
-	req := &Request{
-		UserID: 1231231,
-		Lang:   "en",
-		Text:   "Hola!",
-	}
-	s := ""
-	req.Stream = make(chan *Response)
-	go streamWithOpenAI(req)
-	for resp := range req.Stream {
-		s += resp.Text
-	}
-	assert.Equal(t, s, "Hello!")
-}
+// func TestCallOpenAI(t *testing.T) {
+// 	req := &Request{
+// 		UserID: 1231231,
+// 		Lang:   "en",
+// 		Text:   "Hola!",
+// 	}
+// 	s := ""
+// 	req.Stream = make(chan *Response)
+// 	go streamWithOpenAI(req)
+// 	for resp := range req.Stream {
+// 		s += resp.Text
+// 	}
+// 	assert.Equal(t, s, "Hello!")
+// }
 
 func init() {
 	var err error

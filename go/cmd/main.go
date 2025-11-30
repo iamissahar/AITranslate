@@ -17,7 +17,8 @@ type API struct {
 
 type Request struct {
 	UserID *int   `json:"user_id"`
-	Lang   string `json:"lang_code"`
+	Target string `json:"target_lang"`
+	Source string `json:"source_lang,omitempty"`
 	Text   string `json:"text"`
 }
 
@@ -47,9 +48,16 @@ func (api *API) isDataRelevant(req *Request, ctx *gin.Context, withText bool) bo
 		}
 
 		if ok {
-			_, ok = app.Languages[req.Lang]
+			_, ok = app.Languages[req.Target]
 			if !ok {
-				ctx.Data(http.StatusBadRequest, "application/json", []byte(fmt.Sprintf(app.ERROR_JSON, app.INVALID_PARAMETERS, "'lang_code' parameter is required")))
+				ctx.Data(http.StatusBadRequest, "application/json", []byte(fmt.Sprintf(app.ERROR_JSON, app.INVALID_PARAMETERS, "valid 'target_lang' parameter is required")))
+			} else {
+				if req.Source != "" {
+					_, ok = app.Languages[req.Source]
+					if !ok {
+						ctx.Data(http.StatusBadRequest, "application/json", []byte(fmt.Sprintf(app.ERROR_JSON, app.INVALID_PARAMETERS, "valid 'source_lang' parameter is required, if any")))
+					}
+				}
 			}
 		}
 	}
@@ -74,7 +82,7 @@ func (e *event) step(w io.Writer) bool {
 	return ok
 }
 
-func (api *API) begin(req *Request, trsl app.Translator, ctx *gin.Context, e *event) {
+func (api *API) begin(req *Request, trsl app.Translator, ctx *gin.Context, e *event, deepl bool) {
 	var (
 		res  string
 		code int
@@ -82,14 +90,19 @@ func (api *API) begin(req *Request, trsl app.Translator, ctx *gin.Context, e *ev
 	)
 	if api.isDataRelevant(req, ctx, true) {
 		fmt.Println("data is relevant")
-		app.CheckUserData(api.s, req.UserID, req.Lang)
+		app.CheckUserData(api.s, req.UserID)
 		if e != nil {
-			fmt.Println("user data is all right start streaming")
-			go trsl.Do(*req.UserID, req.Lang, req.Text)
+			fmt.Println("user data is allright start streaming")
+			go trsl.Do(*req.UserID, "", req.Target, req.Text)
 			ctx.Stream(e.step)
 		} else {
-			fmt.Println("user data is all right start getting html data")
-			res, err = trsl.Do(*req.UserID, req.Lang, req.Text)
+			if !deepl {
+				fmt.Println("user data is allright start getting html data")
+				res, err = trsl.Do(*req.UserID, "", req.Target, req.Text)
+			} else {
+				fmt.Println("user data is allright start getting deepl translation")
+				res, err = trsl.Do(*req.UserID, req.Source, req.Target, req.Text)
+			}
 			if err != nil {
 				code = http.StatusInternalServerError
 			} else {
@@ -97,6 +110,7 @@ func (api *API) begin(req *Request, trsl app.Translator, ctx *gin.Context, e *ev
 			}
 			fmt.Println("going to send the reponse")
 			ctx.Data(code, "application/json", []byte(res))
+
 		}
 	}
 }
@@ -111,7 +125,7 @@ func (api *API) getStream(ctx *gin.Context) {
 	e.ch = make(chan string)
 	e.ctx = ctx
 	streamer.Init(e.ch, api.s)
-	api.begin(req, streamer, ctx, e)
+	api.begin(req, streamer, ctx, e, false)
 }
 
 func (api *API) getJson(ctx *gin.Context) {
@@ -120,14 +134,14 @@ func (api *API) getJson(ctx *gin.Context) {
 		jsoner = new(app.Jsoner)
 	)
 	jsoner.Init(api.s)
-	api.begin(req, jsoner, ctx, nil)
+	api.begin(req, jsoner, ctx, nil, false)
 }
 
-func (api *API) changeLanguage(ctx *gin.Context) {
-	var req = new(Request)
-	if api.isDataRelevant(req, ctx, false) {
-		app.CheckUserData(api.s, req.UserID, req.Lang)
-		api.s.ChangeLanguage(*req.UserID, req.Lang)
-		ctx.Data(http.StatusOK, "application/json", []byte(fmt.Sprintf(app.DEFAULT_SUCCESS_JSON, req.UserID)))
-	}
+func (api *API) getDeeplTranslation(ctx *gin.Context) {
+	var (
+		req   = new(Request)
+		deepl = new(app.Deepl)
+	)
+	deepl.Init(api.s)
+	api.begin(req, deepl, ctx, nil, true)
 }

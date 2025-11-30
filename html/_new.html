@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>AI Translate</title>
+
+        <!-- Шрифт Inter — тот же, что использует DeepL -->
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="../styles/new_popup.css" />
+    </head>
+    <body>
+        <div id="holder" class="holder" style="height: 100%;">
+            <div id="settings" class="settings-btn">
+                <img src="../icons/settings.png" alt="Settings" />
+            </div>
+
+            <div class="lang-selector">
+                <div class="lang-box">
+                    <div id="source" class="lang-select">
+                        <div id="source_lang" class="lang" value="">
+                            Detected language
+                        </div>
+                        <div id="source_arrow" class="arrow"></div>
+                    </div>
+                </div>
+
+                <div id="switcher" class="switch-lang">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+                        />
+                    </svg>
+                </div>
+
+                <div class="lang-box">
+                    <div id="target" class="lang-select">
+                        <div id="target_lang" class="lang" value="">English</div>
+                        <div id="target_arrow" class="arrow"></div>
+                    </div>
+                </div>
+
+                <div id="source_lang_list" class="language-list"></div>
+                <div id="target_lang_list" class="language-list"></div>
+            </div>
+
+            <!-- Main translation area -->
+            <div class="main">
+                <div id="right_area" class="textarea-container">
+                    <textarea
+                        id="input"
+                        placeholder=""
+                        spellcheck="false"
+                    ></textarea>
+                    <div id="instruction" class="placeholder-text shown">
+                        Type to translate.
+                    </div>
+
+                    <div class="bottom-bar">
+                        <!--<div class="actions">
+                            <div class="action-btn" id="input-copy">
+                                <img
+                                    src="../icons/icon_copy_black.png"
+                                    alt="Copy"
+                                />
+                            </div>
+                        </div>-->
+                        <div class="actions">
+                            <div
+                                class="action-btn arrows"
+                                id="go_back"
+                                style="transform: scaleX(-1)"
+                            >
+                                <img src="../icons/forward.png" alt="Back" />
+                            </div>
+                            <div class="action-btn arrows" id="go_forward">
+                                <img src="../icons/forward.png" alt="Forward" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="left_area" class="textarea-container">
+                    <textarea
+                        id="output"
+                        placeholder=""
+                        spellcheck="false"
+                        readonly="true"
+                    ></textarea>
+                    <div id="status_msg" class="placeholder-text">
+                        Thinking...
+                    </div>
+
+                    <div class="bottom-bar" style="background: #f8f9ff">
+                        <!--<div class="actions">
+                            <div class="action-btn" id="output-copy">
+                                <img
+                                    src="../icons/icon_copy_black.png"
+                                    alt="Copy"
+                                />
+                            </div>
+                        </div>-->
+                        <div class="actions" style="margin-left: auto">
+                            <div class="action-btn copy" id="output_copy">
+                                <img
+                                    src="../icons/icon_copy_black.png"
+                                    alt="Copy"
+                                />
+                            </div>
+                            <div class="action-btn" id="output-like" value="true">
+                                <img src="../icons/like.png" alt="Like" />
+                            </div>
+                            <div class="action-btn" id="output-dislike" value="true">
+                                <img
+                                    src="../icons/like.png"
+                                    style="transform: scaleX(-1) scaleY(-1)"
+                                    alt="Dislike"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+            <div id="settings_slide" class="settings-slide">
+                <div class="settings-header">
+                <button id="back_btn" class="back-btn">
+                    <img src="../icons/back.png">
+                </button>
+                <div class="slide-title">Settings</div>
+            </div>
+
+            <div class="settings-option">
+                <span>Enable translation on pages</span>
+                <label class="switch">
+                    <input type="checkbox" id="context_switch" checked />
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+
+            <div class="settings-option">
+                <span>Target language for page translation</span>
+                <div class="lang-box">
+                    <div id="settings_target" class="lang-select">
+                        <div id="settings_target_lang" class="lang" value="">English</div>
+                        <div class="arrow"></div>
+                    </div>
+                </div>
+                <div id="settings_target_lang_list" class="language-list settings"></div>
+            </div>
+
+            <div class="settings-actions">
+                <div id="status_change" class="status"></div>
+                <button id="save_settings" class="save-btn">Save Settings</button>
+            </div>
+        <script src="../js/popup/new_popup.js"></script>
+    </body>
+</html>
