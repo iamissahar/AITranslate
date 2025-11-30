@@ -213,9 +213,9 @@ func startAPI() {
 	router.POST("/ai_translate/v2/translate/get_json", api.getJson)
 	router.PATCH("/ai_translate/v2/translate/deepl", api.getDeeplTranslation)
 	//tests
-	router.POST("/test/ai_translate/v2/translate/get_stream", api.getStream)
-	router.POST("/test/ai_translate/v2/translate/get_json", api.getJson)
-	router.PATCH("/test/ai_translate/v2/translate/deepl", api.getDeeplTranslation)
+	router.POST("/ai_translate/v2.1/translate/get_stream", api.getStream)
+	router.POST("/ai_translate/v2/translate/get_json", api.getJson)
+	router.PATCH("/ai_translate/v2.1/translate/deepl", api.getDeeplTranslation)
 	// for tests
 	err := router.Run(":4222")
 	if err != nil {
