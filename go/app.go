@@ -668,7 +668,7 @@ func (dl *Deepl) Do(userID int, source, target, text string) (string, error) {
 			fmt.Println("successfuly decoded")
 			if len(dlrs.Translations) > 0 {
 				fmt.Println("result is valid")
-				res = fmt.Sprintf("{\"ok\": true, \"result\": {\"user_id\": %d, \"source_lang\": %q, \"text\": %q}}", userID, dlrs.Translations[0].Source, dlrs.Translations[0].Text)
+				res = fmt.Sprintf("{\"ok\": true, \"result\": {\"user_id\": %d, \"source_lang\": %q, \"text\": %q}}", userID, strings.ToLower(dlrs.Translations[0].Source), dlrs.Translations[0].Text)
 			} else {
 				fmt.Println("result is not valid")
 				err = fmt.Errorf("invalid response from deepl api.")
