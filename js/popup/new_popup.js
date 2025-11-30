@@ -58,7 +58,7 @@ const ALLOWED_LANGUAGES = new Map([
 ]);
 
 class DeepL {
-  static #REQUEST_NAME = "deepl_translation_test";
+  static #REQUEST_NAME = "deepl_translation";
   /**
    * @param {PopupOutput} output
    * @param {Source} source

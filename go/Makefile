@@ -11,7 +11,7 @@ build.db:
 	docker build -f Dockerfile.db -t ai_translate_v2-postgres .
 
 run.app:
-	docker run -d --rm --name ai_translate_v2-container \
+	docker run -d --name ai_translate_v2-container \
 	--network ai_translate_v2-network \
 	-v /etc/letsencrypt/live/nathanissahar.me/fullchain.pem:/certs/fullchain.pem:ro \
   	-v /etc/letsencrypt/live/nathanissahar.me/privkey.pem:/certs/privkey.pem:ro \

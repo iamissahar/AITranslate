@@ -109,7 +109,7 @@ async function TranslateAWord(msg, responseF) {
   try {
     console.log("[DEBUG]", msg);
     const response = await fetch(
-      DOMAIN + "/ai_translate/v2/translate/get_json",
+      DOMAIN + "/ai_translate/v2.1/translate/get_json",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -134,11 +134,14 @@ async function TranslateAWord(msg, responseF) {
 
 async function ChangeLanguage(msg, responseF) {
   try {
-    const response = await fetch(DOMAIN + "/ai_translate/v2/change_language", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(msg),
-    });
+    const response = await fetch(
+      DOMAIN + "/ai_translate/v2.1/change_language",
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(msg),
+      },
+    );
     const data = await response.json();
     responseF(data);
   } catch (err) {
@@ -156,7 +159,7 @@ async function requestResponse(port, msg) {
 
     controller = new AbortController();
     signal = controller.signal;
-    response = await fetch(DOMAIN + "/ai_translate/v2/translate/get_stream", {
+    response = await fetch(DOMAIN + "/ai_translate/v2.1/translate/get_stream", {
       method: "POST",
       signal,
       headers: { "Content-Type": "application/json" },
@@ -304,11 +307,14 @@ async function GetSettings() {
 
 async function DeepLTranslate(msg, responsef) {
   try {
-    const response = await fetch(DOMAIN + "/ai_translate/v2/translate/deepl", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(msg),
-    });
+    const response = await fetch(
+      DOMAIN + "/ai_translate/v2.1/translate/deepl",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(msg),
+      },
+    );
     const data = await response.json();
     if (data && data.ok) {
       responsef(data);
