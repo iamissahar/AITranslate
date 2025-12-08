@@ -10,7 +10,7 @@ class GoogleDriveButton {
   /**@returns {string} */
   #GetHTML() {
     return `<div id="google_drive_btn" class="the-button">
-  <img id="logo" src=${chrome.runtime.getURL("icons/very_small_logo.png")}>
+  <img id="logo" src=${chrome.runtime.getURL("icons/logoV3_48.png")}>
 </div>`;
   }
 

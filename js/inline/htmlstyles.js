@@ -308,35 +308,35 @@ function GetHiddenHTML() {
 </div>`;
 }
 
-function GetButtonHTML() {
-  return `<div id="go_btn">
-    <img id="logo" src=${chrome.runtime.getURL("icons/very_small_logo.png")}>
-  </div>`;
-}
+// function GetButtonHTML() {
+//   return `<div id="go_btn">
+//     <img id="logo" src=${chrome.runtime.getURL("icons/very_small_logo.png")}>
+//   </div>`;
+// }
 
-function GetButtonStyles() {
-  return `#go_btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 5px;
-  position: absolute;
-  width: 25px;
-  height: 25px;
-  border-radius: 5px;
-  border: 1px solid #000000;
-  opacity: 0;
-  transition: opacity 0.5s;
-  cursor: pointer;
-}
-#go_btn.show {
-  opacity: 1;
-}
-#logo {
-  width: 22px;
-  height: 20px;
-}`;
-}
+// function GetButtonStyles() {
+//   return `#go_btn {
+//   display: flex;
+//   align-items: center;
+//   justify-content: center;
+//   margin: 5px;
+//   position: absolute;
+//   width: 25px;
+//   height: 25px;
+//   border-radius: 5px;
+//   border: 1px solid #000000;
+//   opacity: 0;
+//   transition: opacity 0.5s;
+//   cursor: pointer;
+// }
+// #go_btn.show {
+//   opacity: 1;
+// }
+// #logo {
+//   width: 22px;
+//   height: 20px;
+// }`;
+// }
 
 function GetButtonHTML() {
   return `<div id="go_btn">

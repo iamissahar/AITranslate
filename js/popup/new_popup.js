@@ -57,6 +57,12 @@ const ALLOWED_LANGUAGES = new Map([
   ["mk", "Macedonian"],
 ]);
 
+const RTL_LANGUAGES = new Map([
+  ["ar", "Arabic"],
+  ["he", "Hebrew"],
+  ["ur", "Urdu"],
+]);
+
 class DeepL {
   static #REQUEST_NAME = "deepl_translation";
   /**
@@ -121,7 +127,11 @@ class Settings {
   #settingsSlide = document.getElementById("settings_slide");
   #main = document.getElementById("holder");
   #settings = document.getElementById("settings");
+  #saveBtn = document.getElementById("save_settings");
   #back = document.getElementById("back_btn");
+  #statusMsg = document.getElementById("status_change");
+  #switcher = document.getElementById("context_switch");
+  #tlang = document.getElementById("settings_target_lang");
 
   #GoToSettings() {
     this.#main.style.transition = "left 0.3s ease-in-out";
@@ -134,9 +144,38 @@ class Settings {
     this.#settingsSlide.classList.remove("active");
   }
 
+  #SaveSettings() {
+    this.#statusMsg.classList.add("shown");
+    chrome.runtime.sendMessage({
+      action: "enable_context_menu",
+      enabled: this.#switcher.checked,
+    });
+    console.log("settings_target_lang:", this.#tlang.getAttribute("value"));
+    chrome.storage.local.set({
+      context_menu_enabled: this.#switcher.checked,
+      settings_target_lang: this.#tlang.getAttribute("value"),
+    });
+
+    setTimeout(() => {
+      this.#statusMsg.classList.remove("shown");
+    }, 1500);
+  }
+
   Activate() {
     this.#settings.addEventListener("click", this.#GoToSettings.bind(this));
     this.#back.addEventListener("click", this.#GoBack.bind(this));
+    this.#saveBtn.addEventListener("click", this.#SaveSettings.bind(this));
+    chrome.storage.local.get(
+      ["settings_target_lang", "context_menu_enabled"],
+      (result) => {
+        console.log("settings_target_lang:", result.settings_target_lang);
+        this.#tlang.setAttribute("value", result.settings_target_lang);
+        this.#tlang.textContent = ALLOWED_LANGUAGES.get(
+          result.settings_target_lang,
+        );
+        this.#switcher.checked = result.context_menu_enabled;
+      },
+    );
   }
 }
 
@@ -174,13 +213,19 @@ class LanguageList {
   }
 
   /**
+   * @param {boolean} issource
    * @returns {{ right: HTMLDivElement; left: HTMLDivElement; }}
    */
-  popupate() {
+  popupate(issource) {
     var entries, mid, right, left;
+
     entries = Array.from(ALLOWED_LANGUAGES.entries()).sort((a, b) =>
       a[0].localeCompare(b[0]),
     );
+
+    if (issource) {
+      entries.unshift(["auto", "Detect Language"]);
+    }
 
     mid = Math.ceil(entries.length / 2);
     right = entries.slice(0, mid);
@@ -214,6 +259,7 @@ class LanguageList {
 }
 
 class Source extends LanguageList {
+  #input = document.getElementById("input");
   #langlist = document.getElementById("source_lang_list");
   #currentCheckMark = null;
   #lang = document.getElementById("source_lang");
@@ -237,8 +283,16 @@ class Source extends LanguageList {
    * @param {HTMLImageElement} img
    */
   change(lang, val, img) {
+    var ok;
     if (this.#currentCheckMark)
       this.#currentCheckMark.classList.remove("shown");
+
+    ok = RTL_LANGUAGES.get(val);
+    if (ok) {
+      this.#input.dir = "rtl";
+    } else {
+      this.#input.dir = "ltr";
+    }
 
     this.#lang.textContent = lang;
     chrome.storage.local.set({ popup_source_lang: val });
@@ -255,7 +309,16 @@ class Source extends LanguageList {
   set(val) {
     this.#langlist.querySelectorAll(".lang-opt").forEach((opt) => {
       if (opt.getAttribute("value") === val) {
-        this.change(ALLOWED_LANGUAGES.get(val), val, opt.querySelector("img"));
+        if (val === "auto") {
+          this.change("Detect Language", val, opt.querySelector("img"));
+        } else {
+          this.change(
+            ALLOWED_LANGUAGES.get(val),
+            val,
+            opt.querySelector("img"),
+          );
+        }
+
         return;
       }
     });
@@ -277,7 +340,7 @@ class Source extends LanguageList {
 
   init() {
     var sides;
-    sides = this.popupate();
+    sides = this.popupate(true);
     this.#langlist.appendChild(sides.right);
     this.#langlist.appendChild(sides.left);
 
@@ -298,6 +361,7 @@ class Source extends LanguageList {
 }
 
 class Target extends LanguageList {
+  #output = document.getElementById("output");
   #langlist = document.getElementById("target_lang_list");
   #currentCheckMark = null;
   #lang = document.getElementById("target_lang");
@@ -320,8 +384,16 @@ class Target extends LanguageList {
    * @param {HTMLImageElement} img
    */
   change(lang, val, img) {
+    var ok;
     if (this.#currentCheckMark)
       this.#currentCheckMark.classList.remove("shown");
+
+    ok = RTL_LANGUAGES.get(val);
+    if (ok) {
+      this.#output.dir = "rtl";
+    } else {
+      this.#output.dir = "ltr";
+    }
 
     this.#lang.textContent = lang;
     chrome.storage.local.set({ popup_target_lang: val });
@@ -329,6 +401,10 @@ class Target extends LanguageList {
     img.classList.add("shown");
     this.#currentCheckMark = img;
     this.close();
+
+    if (popup.GetValue() !== "") {
+      popup.InputInput();
+    }
   }
 
   /**
@@ -360,7 +436,7 @@ class Target extends LanguageList {
 
   init() {
     var sides;
-    sides = this.popupate();
+    sides = this.popupate(false);
     this.#langlist.appendChild(sides.right);
     this.#langlist.appendChild(sides.left);
 
@@ -444,7 +520,7 @@ class SettingsTarget extends LanguageList {
 
   init() {
     var sides;
-    sides = this.popupate();
+    sides = this.popupate(false);
     this.#langlist.appendChild(sides.right);
     this.#langlist.appendChild(sides.left);
 
@@ -499,11 +575,55 @@ class Popup {
     this.#settings.Activate(this.#lists);
   }
 
+  /**
+   * @returns {string}
+   */
+  GetValue() {
+    return this.#input.value;
+  }
+
+  InputInput() {
+    if (this.#input.value === "") {
+      this.#instruction.classList.add("shown");
+    } else {
+      this.output.SetReadOnly();
+      this.#instruction.classList.remove("shown");
+      var l;
+      this.#timeoutcounter.push(0);
+      l = this.#timeoutcounter.length;
+      setTimeout(() => {
+        if (this.#timeoutcounter.length === l) {
+          if (this.#history.length > 10) {
+            this.#RemoveFirst();
+          }
+          this.#AddItem();
+          if (this.#history.length > 1) {
+            this.#notoback = false;
+            this.#currentPosition = this.#history.length - 1;
+            this.#backbtn.classList.add("available");
+          }
+
+          this.output.SetAnimation();
+          if (this.#input.value !== "")
+            this.deepl.Do(this.#currentPosition, this.#input.value, this);
+        }
+      }, 500);
+    }
+    if (document.activeElement === this.#input) {
+      this.#rightArea.classList.add("focused");
+    }
+  }
+
   #Switch() {
-    var s, t;
+    var s, t, txt;
     if (this.#slang.textContent !== Popup.#DEFAULT_SOURCE) {
       t = this.#tlang.getAttribute("value");
       s = this.#slang.getAttribute("value");
+      txt = this.output.GetValue();
+      if (txt) {
+        this.#input.value = txt;
+        this.InputInput();
+      }
       this.source.set(t);
       this.target.set(s);
     } else {
@@ -593,6 +713,7 @@ class Popup {
     chrome.storage.local.get(
       ["popup_source_lang", "popup_target_lang"],
       (result) => {
+        console.log(result);
         if (result.popup_source_lang) this.source.set(result.popup_source_lang);
         if (result.popup_target_lang) this.target.set(result.popup_target_lang);
       },
@@ -602,37 +723,7 @@ class Popup {
       this.#instruction.classList.remove("shown");
       this.#rightArea.classList.add("focused");
     });
-    this.#input.addEventListener("input", () => {
-      if (this.#input.value === "") {
-        this.#instruction.classList.add("shown");
-      } else {
-        this.output.SetReadOnly();
-        this.#instruction.classList.remove("shown");
-        var l;
-        this.#timeoutcounter.push(0);
-        l = this.#timeoutcounter.length;
-        setTimeout(() => {
-          if (this.#timeoutcounter.length === l) {
-            if (this.#history.length > 10) {
-              this.#RemoveFirst();
-            }
-            this.#AddItem();
-            if (this.#history.length > 1) {
-              this.#notoback = false;
-              this.#currentPosition = this.#history.length - 1;
-              this.#backbtn.classList.add("available");
-            }
-
-            this.output.SetAnimation();
-            if (this.#input.value !== "")
-              this.deepl.Do(this.#currentPosition, this.#input.value, this);
-          }
-        }, 500);
-      }
-      if (document.activeElement === this.#input) {
-        this.#rightArea.classList.add("focused");
-      }
-    });
+    this.#input.addEventListener("input", this.InputInput.bind(this));
     this.#switcher.addEventListener("click", this.#Switch.bind(this));
     document.addEventListener("click", (event) => {
       if (document.activeElement !== this.#input) {
@@ -706,6 +797,13 @@ class PopupOutput {
     this.#dislikeBtn.classList.add("available");
   }
 
+  /**
+   * @returns {string}
+   */
+  GetValue() {
+    return this.#outputContent.value;
+  }
+
   #Copy() {
     var img = this.#copyBtn.querySelector("img");
     if (
@@ -763,8 +861,10 @@ class PopupOutput {
   }
 }
 
+var popup = null;
+
 document.addEventListener("DOMContentLoaded", () => {
-  var sl, tl, stl, dpl, otp, ppp;
+  var sl, tl, stl, dpl, otp;
   sl = new Source();
   tl = new Target();
   stl = new SettingsTarget();
@@ -773,6 +873,6 @@ document.addEventListener("DOMContentLoaded", () => {
   sl.init();
   tl.init();
   stl.init();
-  ppp = new Popup(sl, tl, stl, dpl, otp);
-  ppp.Activate();
+  popup = new Popup(sl, tl, stl, dpl, otp);
+  popup.Activate();
 });

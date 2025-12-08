@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "AI Translate: Get a High Quality Translation Powered by ChatGPT",
   "description": "Understand any language instantly with AI Translation — a lightweight, one-click extension powered by ChatGPT.",
-  "version": "0.1.4",
+  "version": "0.2.1",
   "permissions": [
     "activeTab",
     "storage",
@@ -15,14 +15,14 @@
     "type": "module"
   },
   "icons": {
-    "16": "icons/logoV2_16.png",
-    "128": "icons/logoV2_128.png"
+    "16": "icons/logoV3_16.png",
+    "128": "icons/logoV3_128.png"
   },
   "action": {
     "default_popup": "html/_new.html",
     "default_icon": {
-      "48": "icons/logoV2_48.png",
-      "128": "icons/logoV2_128.png"
+      "48": "icons/logoV3_48.png",
+      "128": "icons/logoV3_128.png"
     }
   },
   "content_scripts": [

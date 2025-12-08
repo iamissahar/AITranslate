@@ -89,9 +89,41 @@ chrome.runtime.onInstalled.addListener(() => {
     }
   });
 
-  // chrome.tabs.create({
-  //   url: chrome.runtime.getURL("html/welcome.html"),
-  // });
+  new Promise((resolve) => {
+    chrome.storage.local.get(
+      [
+        "popup_source_lang",
+        "popup_target_lang",
+        "settings_target_lang",
+        "user_id",
+      ],
+      (result) => {
+        resolve({
+          popup_source_lang: result.popup_source_lang || "auto",
+          popup_target_lang:
+            result.popup_target_lang || navigator.language.slice(0, 2) || "en",
+          settings_target_lang:
+            result.settings_target_lang ||
+            navigator.language.slice(0, 2) ||
+            "en",
+          user_id: result.user_id || 0,
+        });
+      },
+    );
+  }).then((res) => {
+    chrome.storage.local.set({
+      popup_source_lang: res.popup_source_lang,
+      popup_target_lang: res.popup_target_lang,
+      settings_target_lang: res.settings_target_lang,
+      context_menu_enabled: true,
+      user_id: res.user_id,
+    });
+    if (!res.user_id || res.user_id === 0) {
+      chrome.tabs.create({
+        url: chrome.runtime.getURL("html/welcome.html"),
+      });
+    }
+  });
 });
 
 chrome.contextMenus.onClicked.addListener(function (info, tab) {
@@ -352,6 +384,12 @@ async function messageHandler(msg, sender, response) {
   } else if (msg.action === "abort_stream") {
     if (controller !== null) {
       controller.abort();
+    }
+  } else if (msg.action === "enable_context_menu") {
+    if (msg.enabled) {
+      CreateContextMenu();
+    } else {
+      RemoveContextMenu();
     }
   } else if (msg.action === "get_settings") {
     GetSettings().then((settings) => response(settings));

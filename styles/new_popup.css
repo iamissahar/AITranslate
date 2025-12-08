@@ -458,3 +458,17 @@ input:checked + .slider::before {
 .save-btn:hover {
     background-color: #4338ca;
 }
+
+.status {
+    color: var(--deepl-text);
+    font-size: 14px;
+    font-weight: 400;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 1s;
+    margin-bottom: 10px;
+}
+
+.status.shown {
+    opacity: 1;
+}

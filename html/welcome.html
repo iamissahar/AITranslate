@@ -124,6 +124,8 @@
             }
 
             .step {
+                display: flex;
+                flex-direction: column;
                 background: white;
                 padding: 30px;
                 border-radius: var(--border-radius);
@@ -166,8 +168,9 @@
             }
 
             .screenshot-container {
+                margin-top: auto;
                 position: relative;
-                margin-top: 20px;
+                /*margin-top: 20px;*/
             }
 
             .screenshot {
@@ -410,14 +413,10 @@
                     <div class="step">
                         <h3>Step 1: Click the Extension Logo</h3>
                         <p>
-                            Click to the extension's logo you just pinned.<br />
-                            <strong>1.</strong> Change the target langauge (if
-                            needed).<br />
-                            <strong>2.</strong> Type your text in the input
-                            area.<br />
-                            <strong>3.</strong> Click the button "Send".<br />
-                            Now, just wait a bit, and you will see your
-                            translation.
+                            1. Click to the extension's logo you just pinned.<br />
+                            2. Start typing your text.<br />
+                            The extension will automatically detect the language
+                            and translate it to your target language.
                         </p>
                         <div class="screenshot-container">
                             <img
