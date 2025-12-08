@@ -57,6 +57,47 @@ const ALLOWED_LANGUAGES = new Map([
   ["mk", "Macedonian"],
 ]);
 
+const ALLOWED_DEEP_L_LANGUAGE = new Map([
+  ["ar", "Arabic"],
+  ["bg", "Bulgarian"],
+  ["cs", "Czech"],
+  ["da", "Danish"],
+  ["de", "German"],
+  ["el", "Greek"],
+  ["en-gb", "English (British)"],
+  ["en-us", "English (American)"],
+  ["es", "Spanish"],
+  ["es-419", "Spanish (Latin American)"],
+  ["et", "Estonian"],
+  ["fi", "Finnish"],
+  ["fr", "French"],
+  ["he", "Hebrew"],
+  ["hu", "Hungarian"],
+  ["id", "Indonesian"],
+  ["it", "Italian"],
+  ["ja", "Japanese"],
+  ["ko", "Korean"],
+  ["lt", "Lithuanian"],
+  ["lv", "Latvian"],
+  ["nb", "Norwegian (Bokmål)"],
+  ["nl", "Dutch"],
+  ["pl", "Polish"],
+  ["pt-br", "Portuguese (Brazilian)"],
+  ["pt-pt", "Portuguese (European)"],
+  ["ro", "Romanian"],
+  ["ru", "Russian"],
+  ["sk", "Slovak"],
+  ["sl", "Slovenian"],
+  ["sv", "Swedish"],
+  ["th", "Thai"],
+  ["tr", "Turkish"],
+  ["uk", "Ukrainian"],
+  ["vi", "Vietnamese"],
+  ["zh", "Chinese"],
+  ["zh-hans", "Chinese (Simplified)"],
+  ["zh-hant", "Chinese (Traditional)"],
+]);
+
 const RTL_LANGUAGES = new Map([
   ["ar", "Arabic"],
   ["he", "Hebrew"],
@@ -214,14 +255,21 @@ class LanguageList {
 
   /**
    * @param {boolean} issource
+   * @param {boolean} forpopup
    * @returns {{ right: HTMLDivElement; left: HTMLDivElement; }}
    */
-  popupate(issource) {
+  popupate(issource, forpopup) {
     var entries, mid, right, left;
 
-    entries = Array.from(ALLOWED_LANGUAGES.entries()).sort((a, b) =>
-      a[0].localeCompare(b[0]),
-    );
+    if (forpopup) {
+      entries = Array.from(ALLOWED_DEEP_L_LANGUAGE.entries()).sort((a, b) =>
+        a[0].localeCompare(b[0]),
+      );
+    } else {
+      entries = Array.from(ALLOWED_LANGUAGES.entries()).sort((a, b) =>
+        a[0].localeCompare(b[0]),
+      );
+    }
 
     if (issource) {
       entries.unshift(["auto", "Detect Language"]);
@@ -313,12 +361,14 @@ class Source extends LanguageList {
           this.change("Detect Language", val, opt.querySelector("img"));
         } else {
           this.change(
-            ALLOWED_LANGUAGES.get(val),
+            ALLOWED_DEEP_L_LANGUAGE.get(val),
             val,
             opt.querySelector("img"),
           );
         }
-
+        if (popup.GetValue()) {
+          dpl.Do(popup.GetCurrentPosition(), popup.GetValue(), popup);
+        }
         return;
       }
     });
@@ -340,7 +390,7 @@ class Source extends LanguageList {
 
   init() {
     var sides;
-    sides = this.popupate(true);
+    sides = this.popupate(true, true);
     this.#langlist.appendChild(sides.right);
     this.#langlist.appendChild(sides.left);
 
@@ -414,7 +464,14 @@ class Target extends LanguageList {
   set(val) {
     this.#langlist.querySelectorAll(".lang-opt").forEach((opt) => {
       if (opt.getAttribute("value") === val) {
-        this.change(ALLOWED_LANGUAGES.get(val), val, opt.querySelector("img"));
+        this.change(
+          ALLOWED_DEEP_L_LANGUAGE.get(val),
+          val,
+          opt.querySelector("img"),
+        );
+        if (popup.GetValue()) {
+          dpl.Do(popup.GetCurrentPosition(), popup.GetValue(), popup);
+        }
         return;
       }
     });
@@ -436,7 +493,7 @@ class Target extends LanguageList {
 
   init() {
     var sides;
-    sides = this.popupate(false);
+    sides = this.popupate(false, true);
     this.#langlist.appendChild(sides.right);
     this.#langlist.appendChild(sides.left);
 
@@ -520,7 +577,7 @@ class SettingsTarget extends LanguageList {
 
   init() {
     var sides;
-    sides = this.popupate(false);
+    sides = this.popupate(false, false);
     this.#langlist.appendChild(sides.right);
     this.#langlist.appendChild(sides.left);
 
@@ -580,6 +637,10 @@ class Popup {
    */
   GetValue() {
     return this.#input.value;
+  }
+
+  GetCurrentPosition() {
+    return this.#currentPosition;
   }
 
   InputInput() {
@@ -861,10 +922,13 @@ class PopupOutput {
   }
 }
 
+/**@type {Popup} */
 var popup = null;
+/**@type {DeepL} */
+var dpl = null;
 
 document.addEventListener("DOMContentLoaded", () => {
-  var sl, tl, stl, dpl, otp;
+  var sl, tl, stl, otp;
   sl = new Source();
   tl = new Target();
   stl = new SettingsTarget();

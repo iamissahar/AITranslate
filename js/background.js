@@ -101,7 +101,9 @@ chrome.runtime.onInstalled.addListener(() => {
         resolve({
           popup_source_lang: result.popup_source_lang || "auto",
           popup_target_lang:
-            result.popup_target_lang || navigator.language.slice(0, 2) || "en",
+            result.popup_target_lang ||
+            navigator.language.slice(0, 2) ||
+            "en-us",
           settings_target_lang:
             result.settings_target_lang ||
             navigator.language.slice(0, 2) ||
