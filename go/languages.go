@@ -69,6 +69,7 @@ var Languages = map[string][]string{
 	"pt-br":   {"Portuguese (Brazil)", Gpt3_5},
 	"pt-pt":   {"Portuguese (Portugal)", Gpt3_5},
 	"nb":      {"Norwegian Bokmal", Gpt3_5},
+	"zh":      {"Chinese", Gpt4},
 	"zh-hans": {"Chinese (Simplified)", Gpt4},
 	"zh-hant": {"Chinese (Traditional)", Gpt4},
 }

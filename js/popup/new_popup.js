@@ -366,9 +366,11 @@ class Source extends LanguageList {
             opt.querySelector("img"),
           );
         }
-        if (popup.GetValue()) {
-          dpl.Do(popup.GetCurrentPosition(), popup.GetValue(), popup);
-        }
+        // setTimeout(() => {
+        //   if (popup.GetValue()) {
+        //     dpl.Do(popup.GetCurrentPosition(), popup.GetValue(), popup);
+        //   }
+        // }, 400);
         return;
       }
     });
@@ -469,9 +471,11 @@ class Target extends LanguageList {
           val,
           opt.querySelector("img"),
         );
-        if (popup.GetValue()) {
-          dpl.Do(popup.GetCurrentPosition(), popup.GetValue(), popup);
-        }
+        // setTimeout(() => {
+        //   if (popup.GetValue()) {
+        //     dpl.Do(popup.GetCurrentPosition(), popup.GetValue(), popup);
+        //   }
+        // }, 400);
         return;
       }
     });
@@ -668,7 +672,7 @@ class Popup {
           if (this.#input.value !== "")
             this.deepl.Do(this.#currentPosition, this.#input.value, this);
         }
-      }, 500);
+      }, 700);
     }
     if (document.activeElement === this.#input) {
       this.#rightArea.classList.add("focused");
