@@ -80,6 +80,7 @@ func main() {
 
 func init() {
 	var err error
+	fmt.Println(os.Getenv("password_db"))
 	psqlconn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		os.Getenv("host_db"), os.Getenv("port_db"), os.Getenv("user_db"),
 		os.Getenv("password_db"), os.Getenv("dbname_db"), os.Getenv("sslmode_db"))
