@@ -33,8 +33,6 @@ services:
       - postgres_password
     networks:
       - ai_translate_network
-    volumes:
-      - db_data:/var/lib/postgresql/data
 
   ai_translate:
     image: ai_translate:latest
@@ -64,6 +62,3 @@ services:
       - email_password
     depends_on:
       - postgres
-
-volumes:
-  db_data:
