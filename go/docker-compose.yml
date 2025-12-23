@@ -38,7 +38,8 @@ services:
       - ai_translate_network
     configs:
       - source: init_sql
-        target: /docker-entrypoint-initdb.d/init.sql:ro
+        target: /docker-entrypoint-initdb.d/init.sql
+        mode: 0440
     volumes:
       - db_data:/var/lib/postgresql/data
 
