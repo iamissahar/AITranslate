@@ -5,7 +5,6 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>AI Translate</title>
 
-        <!-- Шрифт Inter — тот же, что использует DeepL -->
         <link
             href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
             rel="stylesheet"
@@ -13,7 +12,7 @@
         <link rel="stylesheet" href="../styles/new_popup.css" />
     </head>
     <body>
-        <div id="holder" class="holder" style="height: 100%;">
+        <div id="holder" class="holder" style="height: 100%">
             <div id="settings" class="settings-btn">
                 <img src="../icons/settings.png" alt="Settings" />
             </div>
@@ -44,7 +43,9 @@
 
                 <div class="lang-box">
                     <div id="target" class="lang-select">
-                        <div id="target_lang" class="lang" value="">English</div>
+                        <div id="target_lang" class="lang" value="">
+                            English
+                        </div>
                         <div id="target_arrow" class="arrow"></div>
                     </div>
                 </div>
@@ -116,10 +117,18 @@
                                     alt="Copy"
                                 />
                             </div>
-                            <div class="action-btn" id="output-like" value="true">
+                            <div
+                                class="action-btn"
+                                id="output-like"
+                                value="true"
+                            >
                                 <img src="../icons/like.png" alt="Like" />
                             </div>
-                            <div class="action-btn" id="output-dislike" value="true">
+                            <div
+                                class="action-btn"
+                                id="output-dislike"
+                                value="true"
+                            >
                                 <img
                                     src="../icons/like.png"
                                     style="transform: scaleX(-1) scaleY(-1)"
@@ -131,10 +140,10 @@
                 </div>
             </div>
         </div>
-            <div id="settings_slide" class="settings-slide">
-                <div class="settings-header">
+        <div id="settings_slide" class="settings-slide">
+            <div class="settings-header">
                 <button id="back_btn" class="back-btn">
-                    <img src="../icons/back.png">
+                    <img src="../icons/back.png" />
                 </button>
                 <div class="slide-title">Settings</div>
             </div>
@@ -147,22 +156,68 @@
                 </label>
             </div>
 
-
             <div class="settings-option">
                 <span>Target language for page translation</span>
                 <div class="lang-box">
                     <div id="settings_target" class="lang-select">
-                        <div id="settings_target_lang" class="lang" value=""></div>
+                        <div
+                            id="settings_target_lang"
+                            class="lang"
+                            value=""
+                        ></div>
                         <div class="arrow"></div>
                     </div>
                 </div>
-                <div id="settings_target_lang_list" class="language-list settings"></div>
+                <div
+                    id="settings_target_lang_list"
+                    class="language-list settings"
+                ></div>
             </div>
 
             <div class="settings-actions">
                 <div id="status_change" class="status">Settings saved!</div>
-                <button id="save_settings" class="save-btn">Save Settings</button>
+                <button id="save_settings" class="save-btn">
+                    Save Settings
+                </button>
             </div>
+        </div>
+        <div id="rate_slide" class="rate-slide">
+            <div class="settings-header">
+                <button id="rate_close_btn" class="back-btn">
+                    <img src="../icons/back.png" />
+                </button>
+                <div class="slide-title">Rate Our Extension</div>
+            </div>
+
+            <div class="rate-content">
+                <p>
+                    We hope you are enjoying the
+                    <strong>In-line AI Translator!</strong>
+                </p>
+                <p>
+                    Please take a moment to leave us a rating on the
+                    <strong>Chrome Web Store.</strong> Your support helps us
+                    improve.
+                </p>
+                <div class="start-holder">
+                    <div id="star_1" class="star">
+                        <img src="../icons/star.png" />
+                    </div>
+                    <div id="star_2" class="star">
+                        <img src="../icons/star.png" />
+                    </div>
+                    <div id="star_3" class="star">
+                        <img src="../icons/star.png" />
+                    </div>
+                    <div id="star_4" class="star">
+                        <img src="../icons/star.png" />
+                    </div>
+                    <div id="star_5" class="star">
+                        <img src="../icons/star.png" />
+                    </div>
+                </div>
+            </div>
+        </div>
         <script src="../js/popup/new_popup.js"></script>
     </body>
 </html>

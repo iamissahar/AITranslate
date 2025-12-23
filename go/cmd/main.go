@@ -71,11 +71,8 @@ func (e *event) step(w io.Writer) bool {
 	)
 	if chunk, ok = <-e.ch; ok {
 		if bytes.HasPrefix([]byte(chunk), []byte("{\"ok\": false,")) {
-			fmt.Println("\033[34m[DEBUG]\033[0m ", chunk)
 			e.ctx.Data(http.StatusInternalServerError, "application/json", []byte(chunk))
 		} else {
-			fmt.Println("\033[34m[DEBUG]\033[0m sending chunk to client")
-			fmt.Println("\033[34m[DEBUG]\033[0m ", chunk)
 			e.ctx.SSEvent("data", chunk)
 		}
 	}
@@ -89,18 +86,14 @@ func (api *API) begin(req *Request, trsl app.Translator, ctx *gin.Context, e *ev
 		err  error
 	)
 	if api.isDataRelevant(req, ctx, true) {
-		fmt.Println("data is relevant")
 		app.CheckUserData(api.s, req.UserID)
 		if e != nil {
-			fmt.Println("user data is allright start streaming")
 			go trsl.Do(*req.UserID, "", req.Target, req.Text)
 			ctx.Stream(e.step)
 		} else {
 			if !deepl {
-				fmt.Println("user data is allright start getting html data")
 				res, err = trsl.Do(*req.UserID, "", req.Target, req.Text)
 			} else {
-				fmt.Println("user data is allright start getting deepl translation")
 				res, err = trsl.Do(*req.UserID, req.Source, req.Target, req.Text)
 			}
 			if err != nil {
@@ -108,7 +101,6 @@ func (api *API) begin(req *Request, trsl app.Translator, ctx *gin.Context, e *ev
 			} else {
 				code = http.StatusOK
 			}
-			fmt.Println("going to send the response: ", res)
 			ctx.Data(code, "application/json", []byte(res))
 
 		}
@@ -121,7 +113,6 @@ func (api *API) getStream(ctx *gin.Context) {
 		streamer = new(app.Streamer)
 		e        = new(event)
 	)
-	fmt.Println("Hey! Now, it's a stream")
 	e.ch = make(chan string)
 	e.ctx = ctx
 	streamer.Init(e.ch, api.s)

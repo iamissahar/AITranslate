@@ -57,7 +57,43 @@ const ALLOWED_LANGUAGES = new Map([
   ["mk", "Macedonian"],
 ]);
 
-const ALLOWED_DEEP_L_LANGUAGE = new Map([
+const ALLOWED_DEEPL_SOURCE_LANGUAGE = new Map([
+  ["ar", "Arabic"],
+  ["bg", "Bulgarian"],
+  ["cs", "Czech"],
+  ["da", "Danish"],
+  ["de", "German"],
+  ["el", "Greek"],
+  ["en", "English"],
+  ["es", "Spanish"],
+  ["et", "Estonian"],
+  ["fi", "Finnish"],
+  ["fr", "French"],
+  ["he", "Hebrew"],
+  ["hu", "Hungarian"],
+  ["id", "Indonesian"],
+  ["it", "Italian"],
+  ["ja", "Japanese"],
+  ["ko", "Korean"],
+  ["lt", "Lithuanian"],
+  ["lv", "Latvian"],
+  ["nb", "Norwegian (Bokmål)"],
+  ["nl", "Dutch"],
+  ["pl", "Polish"],
+  ["pt", "Portuguese"],
+  ["ro", "Romanian"],
+  ["ru", "Russian"],
+  ["sk", "Slovak"],
+  ["sl", "Slovenian"],
+  ["sv", "Swedish"],
+  ["th", "Thai"],
+  ["tr", "Turkish"],
+  ["uk", "Ukrainian"],
+  ["vi", "Vietnamese"],
+  ["zh", "Chinese"],
+]);
+
+const ALLOWED_DEEPL_TARGET_LANGUAGE = new Map([
   ["ar", "Arabic"],
   ["bg", "Bulgarian"],
   ["cs", "Czech"],
@@ -262,9 +298,15 @@ class LanguageList {
     var entries, mid, right, left;
 
     if (forpopup) {
-      entries = Array.from(ALLOWED_DEEP_L_LANGUAGE.entries()).sort((a, b) =>
-        a[0].localeCompare(b[0]),
-      );
+      if (issource) {
+        entries = Array.from(ALLOWED_DEEPL_SOURCE_LANGUAGE.entries()).sort(
+          (a, b) => a[0].localeCompare(b[0]),
+        );
+      } else {
+        entries = Array.from(ALLOWED_DEEPL_TARGET_LANGUAGE.entries()).sort(
+          (a, b) => a[0].localeCompare(b[0]),
+        );
+      }
     } else {
       entries = Array.from(ALLOWED_LANGUAGES.entries()).sort((a, b) =>
         a[0].localeCompare(b[0]),
@@ -361,7 +403,7 @@ class Source extends LanguageList {
           this.change("Detect Language", val, opt.querySelector("img"));
         } else {
           this.change(
-            ALLOWED_DEEP_L_LANGUAGE.get(val),
+            ALLOWED_DEEPL_SOURCE_LANGUAGE.get(val),
             val,
             opt.querySelector("img"),
           );
@@ -467,7 +509,7 @@ class Target extends LanguageList {
     this.#langlist.querySelectorAll(".lang-opt").forEach((opt) => {
       if (opt.getAttribute("value") === val) {
         this.change(
-          ALLOWED_DEEP_L_LANGUAGE.get(val),
+          ALLOWED_DEEPL_TARGET_LANGUAGE.get(val),
           val,
           opt.querySelector("img"),
         );
@@ -611,6 +653,15 @@ class Popup {
   #rightArea = document.getElementById("right_area");
   #backbtn = document.getElementById("go_back");
   #forwardbtn = document.getElementById("go_forward");
+  #rateSlide = document.getElementById("rate_slide");
+  #rateCloseBtn = document.getElementById("rate_close_btn");
+  #stars = [
+    document.getElementById("star_1"),
+    document.getElementById("star_2"),
+    document.getElementById("star_3"),
+    document.getElementById("star_4"),
+    document.getElementById("star_5"),
+  ];
   #settings = new Settings();
   #lists = {};
   #timeoutcounter = [];
@@ -619,6 +670,7 @@ class Popup {
   #notoback = true;
   #notoforward = true;
   #currentPosition = 0;
+  #rateUsid = 0;
 
   /**
    * @param {Source} sl
@@ -647,10 +699,25 @@ class Popup {
     return this.#currentPosition;
   }
 
+  /**
+   * @param {boolean} shown
+   */
+  async #rateUs(shown) {
+    if (!shown) {
+      this.#rateUsid = setTimeout(() => {
+        this.#rateSlide.classList.add("active");
+      }, 6000);
+    }
+  }
+
   InputInput() {
     if (this.#input.value === "") {
       this.#instruction.classList.add("shown");
     } else {
+      chrome.storage.local.get(["rate_us_shown"], (result) => {
+        clearTimeout(this.#rateUsid);
+        this.#rateUs(result.rate_us_shown);
+      });
       this.output.SetReadOnly();
       this.#instruction.classList.remove("shown");
       var l;
@@ -672,7 +739,7 @@ class Popup {
           if (this.#input.value !== "")
             this.deepl.Do(this.#currentPosition, this.#input.value, this);
         }
-      }, 700);
+      }, 500);
     }
     if (document.activeElement === this.#input) {
       this.#rightArea.classList.add("focused");
@@ -689,6 +756,15 @@ class Popup {
         this.#input.value = txt;
         this.InputInput();
       }
+
+      if (t === "en-gb" || t === "en-us") t = "en";
+      if (t === "es-419") t = "es";
+      if (t === "pt-pt" || t === "pt-br") t = "pt";
+      if (t === "zh-hans" || t === "zh-hant") t = "zh";
+
+      if (s === "en") s = "en-us";
+      if (s === "pt") s = "pt-pt";
+
       this.source.set(t);
       this.target.set(s);
     } else {
@@ -798,6 +874,29 @@ class Popup {
     });
     this.#backbtn.addEventListener("click", this.#HistoryBack.bind(this));
     this.#forwardbtn.addEventListener("click", this.#HistoryForward.bind(this));
+    this.#rateCloseBtn.addEventListener("click", () => {
+      chrome.storage.local.set({ rate_us_shown: true });
+      this.#rateSlide.classList.remove("active");
+    });
+
+    for (let i = 0; i < this.#stars.length; i++) {
+      this.#stars[i].addEventListener("click", () => {
+        chrome.storage.local.set({ rate_us_shown: true });
+        chrome.tabs.create({
+          url: "https://chromewebstore.google.com/detail/blcdghlkkelnjabklhgoenenkefifoeo/reviews",
+        });
+      });
+      this.#stars[i].addEventListener("mouseenter", () => {
+        for (let j = 0; j <= i; j++) {
+          this.#stars[j].querySelector("img").classList.add("active");
+        }
+      });
+      this.#stars[i].addEventListener("mouseleave", () => {
+        for (let j = 0; j <= i; j++) {
+          this.#stars[j].querySelector("img").classList.remove("active");
+        }
+      });
+    }
   }
 }
 

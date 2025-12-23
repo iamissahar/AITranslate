@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "AI Translate: Get a High Quality Translation Powered by ChatGPT",
-  "description": "Understand any language instantly with AI Translation — a lightweight, one-click extension powered by ChatGPT.",
-  "version": "0.2.1",
+  "name": "In-line AI Translator for Language Learning: Simple Word & Phrase Translate",
+  "description": "The fastest, most minimal in-line translator for language learners reading and doing homework online.",
+  "version": "0.2.3",
   "permissions": [
     "activeTab",
     "storage",

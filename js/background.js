@@ -1,3 +1,43 @@
+const ALLOWED_DEEPL_TARGET_LANGUAGE = new Map([
+  ["ar", "Arabic"],
+  ["bg", "Bulgarian"],
+  ["cs", "Czech"],
+  ["da", "Danish"],
+  ["de", "German"],
+  ["el", "Greek"],
+  ["en-gb", "English (British)"],
+  ["en-us", "English (American)"],
+  ["es", "Spanish"],
+  ["es-419", "Spanish (Latin American)"],
+  ["et", "Estonian"],
+  ["fi", "Finnish"],
+  ["fr", "French"],
+  ["he", "Hebrew"],
+  ["hu", "Hungarian"],
+  ["id", "Indonesian"],
+  ["it", "Italian"],
+  ["ja", "Japanese"],
+  ["ko", "Korean"],
+  ["lt", "Lithuanian"],
+  ["lv", "Latvian"],
+  ["nb", "Norwegian (Bokmål)"],
+  ["nl", "Dutch"],
+  ["pl", "Polish"],
+  ["pt-br", "Portuguese (Brazilian)"],
+  ["pt-pt", "Portuguese (European)"],
+  ["ro", "Romanian"],
+  ["ru", "Russian"],
+  ["sk", "Slovak"],
+  ["sl", "Slovenian"],
+  ["sv", "Swedish"],
+  ["th", "Thai"],
+  ["tr", "Turkish"],
+  ["uk", "Ukrainian"],
+  ["vi", "Vietnamese"],
+  ["zh", "Chinese"],
+  ["zh-hans", "Chinese (Simplified)"],
+  ["zh-hant", "Chinese (Traditional)"],
+]);
 const OFFSCREEN_PATH = "html/off_screen.html";
 const DOMAIN = "https://nathanissahar.me";
 const TEST_MESSAGES = [
@@ -68,7 +108,7 @@ function CreateContextMenu() {
   try {
     chrome.contextMenus.create({
       id: CONTEXT_MENU_ID,
-      title: "AI Translate",
+      title: "Translate with AI",
       contexts: ["selection"],
     });
   } catch (_) {}
@@ -96,6 +136,7 @@ chrome.runtime.onInstalled.addListener(() => {
         "popup_target_lang",
         "settings_target_lang",
         "user_id",
+        "rate_us_shown",
       ],
       (result) => {
         resolve({
@@ -109,16 +150,30 @@ chrome.runtime.onInstalled.addListener(() => {
             navigator.language.slice(0, 2) ||
             "en",
           user_id: result.user_id || 0,
+          rate_us_shown: result.rate_us_shown || true,
         });
       },
     );
   }).then((res) => {
+    if (!ALLOWED_DEEPL_TARGET_LANGUAGE.get(res.popup_target_lang)) {
+      res.popup_target_lang = "en-us";
+      chrome.storage.local.set({ popup_target_lang: res.popup_target_lang });
+    }
+    if (res.popup_target_lang === "en") {
+      res.popup_target_lang = "en-us";
+      chrome.storage.local.set({ popup_target_lang: res.popup_target_lang });
+    } else if (res.popup_target_lang === "pt") {
+      res.popup_target_lang = "pt-pt";
+      chrome.storage.local.set({ popup_target_lang: res.popup_target_lang });
+    }
+
     chrome.storage.local.set({
       popup_source_lang: res.popup_source_lang,
       popup_target_lang: res.popup_target_lang,
       settings_target_lang: res.settings_target_lang,
       context_menu_enabled: true,
       user_id: res.user_id,
+      rate_us_shown: res.rate_us_shown,
     });
     if (!res.user_id || res.user_id === 0) {
       chrome.tabs.create({
@@ -141,6 +196,15 @@ chrome.contextMenus.onClicked.addListener(function (info, tab) {
 
 async function TranslateAWord(msg, responseF) {
   try {
+    chrome.storage.local.get(["attempt_to_inline_translation"], (result) => {
+      chrome.storage.local.set({
+        attempt_to_inline_translation:
+          result.attempt_to_inline_translation + 1 || 0,
+      });
+      if (result.attempt_to_inline_translation + 1 === 10) {
+        chrome.storage.local.set({ rate_us_shown: false });
+      }
+    });
     console.log("[DEBUG]", msg);
     const response = await fetch(
       DOMAIN + "/ai_translate/v2.1/translate/get_json",
@@ -190,6 +254,16 @@ async function ChangeLanguage(msg, responseF) {
 async function requestResponse(port, msg) {
   try {
     var signal, response, contenttype, reader, line, err;
+
+    chrome.storage.local.get(["attempt_to_inline_translation"], (result) => {
+      chrome.storage.local.set({
+        attempt_to_inline_translation:
+          result.attempt_to_inline_translation + 1 || 0,
+      });
+      if (result.attempt_to_inline_translation + 1 === 10) {
+        chrome.storage.local.set({ rate_us_shown: false });
+      }
+    });
 
     controller = new AbortController();
     signal = controller.signal;
