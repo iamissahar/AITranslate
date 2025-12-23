@@ -4,10 +4,6 @@ networks:
   ai_translate_network:
     driver: overlay
 
-configs:
-  init_sql:
-    file: ./postgres/create.sql
-
 secrets:
   postgres_password:
     file: ./secrets/postgres/password.txt
@@ -31,17 +27,14 @@ services:
         condition: on-failure
     environment:
       POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
       POSTGRES_DB: postgres
     secrets:
       - postgres_password
     networks:
       - ai_translate_network
-    configs:
-      - source: init_sql
-        target: /docker-entrypoint-initdb.d/init.sql
-        mode: 0440
     volumes:
-      - db_data:/var/lib/postgresql/data:rw
+      - db_data:/var/lib/postgresql/data
 
   ai_translate:
     image: ai_translate:latest
