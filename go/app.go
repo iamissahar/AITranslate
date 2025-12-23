@@ -262,16 +262,18 @@ func (dl *Deepl) Do(userID int, source, target, text string) (string, error) {
 	if err == nil {
 		dlrs = new(DeepLResponse)
 		body, _ := io.ReadAll(rs.Body)
-
+		fmt.Println(string(body))
 		json.Unmarshal(body, dlrs)
 		// err = json.NewDecoder(rs.Body).Decode(dlrs)
 		if err == nil {
 			if len(dlrs.Translations) > 0 {
 				res = fmt.Sprintf("{\"ok\": true, \"result\": {\"user_id\": %d, \"source_lang\": %q, \"text\": %q}}", userID, strings.ToLower(dlrs.Translations[0].Source), dlrs.Translations[0].Text)
 			} else {
-				err = fmt.Errorf("invalid response from deepl api.")
+				err = fmt.Errorf("{\"ok\": false, \"result\": {\"error\": \"invalid response from deepl api.\"}}")
 			}
 		}
+	} else {
+		err = fmt.Errorf("{\"ok\": false, \"result\": {\"error\": \"%s\"}}", err.Error())
 	}
 	return res, err
 }

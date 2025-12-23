@@ -423,6 +423,7 @@ async function DeepLTranslate(msg, responsef) {
         body: JSON.stringify(msg),
       },
     );
+    console.log(response);
     const data = await response.json();
     if (data && data.ok) {
       responsef(data);
@@ -430,6 +431,7 @@ async function DeepLTranslate(msg, responsef) {
       responsef(data);
     }
   } catch (err) {
+    console.log(err);
     responsef({
       ok: false,
       result: { user_id: msg.user_id, error: err.toString() },
