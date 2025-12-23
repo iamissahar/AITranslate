@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -82,12 +83,20 @@ func init() {
 	psqlconn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		os.Getenv("host_db"), os.Getenv("port_db"), os.Getenv("user_db"),
 		os.Getenv("password_db"), os.Getenv("dbname_db"), os.Getenv("sslmode_db"))
-	app.Db, err = sql.Open("postgres", psqlconn)
-	if err != nil {
-		panic(err)
+
+	for i := 0; i < 10; i++ {
+		app.Db, err = sql.Open("postgres", psqlconn)
+		if err == nil {
+			err = app.Db.Ping()
+			if err == nil {
+				break
+			}
+		}
+		fmt.Println("Postgres not ready, retrying in 3s...")
+		time.Sleep(3 * time.Second)
 	}
 
-	if err = app.Db.Ping(); err != nil {
-		panic(err)
+	if err != nil {
+		panic(fmt.Sprintf("could not connect to Postgres: %v", err))
 	}
 }
