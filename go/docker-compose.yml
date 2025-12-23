@@ -50,6 +50,10 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
+    ports:
+      - target: 4222
+        published: 4222
+        mode: host
     environment:
       host_db: postgres
       port_db: 5432
