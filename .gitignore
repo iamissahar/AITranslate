@@ -6,3 +6,4 @@ python/pgdata
 go/pgdata
 go/.env
 python/miniconda.sh
+go/secrets

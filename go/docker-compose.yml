@@ -1,0 +1,71 @@
+version: "3.9"
+
+networks:
+  ai_translate_network:
+    driver: overlay
+
+secrets:
+  postgres_password:
+    file: ./secrets/postgres/password.txt
+  openai_key:
+    file: ./secrets/api/open_ai_auth_key.txt
+  deepl_key:
+    file: ./secrets/api/deepl_key.txt
+  email_password:
+    file: ./secrets/api/email_password.txt
+  email_from:
+    file: ./secrets/api/email_from.txt
+  email_to:
+    file: ./secrets/api/email_to.txt
+
+services:
+  postgres:
+    image: ai_translate_postgres:latest
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+    secrets:
+      - postgres_password
+    networks:
+      - ai_translate_network
+    volumes:
+      - db_data:/var/lib/postgresql/data:rw
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    user: "1000:1000"
+
+  ai_translate:
+    image: ai_translate:latest
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    environment:
+      host_db: postgres
+      port_db: 5432
+      user_db: postgres
+      password_db_file: /run/secrets/postgres_password
+      dbname_db: postgres
+      sslmode_db: disable
+      OPENAI_API_KEY: /run/secrets/openai_key
+      DEEPL_API_KEY: /run/secrets/deepl_key
+      email_password_file: /run/secrets/email_password
+      email_from: ${email_from}
+      email_to: ${email_to}
+      email_host: ${email_host}
+    networks:
+      - ai_translate_network
+    secrets:
+      - postgres_password
+      - openai_key
+      - deepl_key
+      - email_password
+    user: "1000:1000"
+    depends_on:
+      - postgres
+
+volumes:
+  db_data:
