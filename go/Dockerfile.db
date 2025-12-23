@@ -6,7 +6,6 @@ RUN echo "log_destination = 'stderr, csvlog'" >> /var/lib/postgresql/data/postgr
 VOLUME ["/var/lib/postgresql/data"]
 COPY ./postgres/create.sql /docker-entrypoint-initdb.d/
 
-
 EXPOSE 5432
 
 CMD ["postgres", "-c", "log_statement=all", "-c", "log_destination=stderr, csvlog"]

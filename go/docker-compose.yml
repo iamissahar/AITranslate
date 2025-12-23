@@ -4,6 +4,10 @@ networks:
   ai_translate_network:
     driver: overlay
 
+configs:
+  init_sql:
+    file: ./postgres/create.sql
+
 secrets:
   postgres_password:
     file: ./secrets/postgres/password.txt
@@ -32,10 +36,11 @@ services:
       - postgres_password
     networks:
       - ai_translate_network
+    configs:
+      - source: init_sql
+        target: /docker-entrypoint-initdb.d/init.sql:ro
     volumes:
-      - db_data:/var/lib/postgresql/data:rw
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    user: "1000:1000"
+      - db_data:/var/lib/postgresql/data
 
   ai_translate:
     image: ai_translate:latest
@@ -63,7 +68,6 @@ services:
       - openai_key
       - deepl_key
       - email_password
-    user: "1000:1000"
     depends_on:
       - postgres
 
