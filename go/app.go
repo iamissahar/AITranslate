@@ -191,7 +191,8 @@ func (str *Streamer) Do(userID int, _, target, text string) (string, error) {
 	)
 	payload, err = getPayload(target, text, TRANSLATE_PROMPT_PATH)
 	if err == nil {
-		rs, err = requestAI(payload, "https://api.openai.com/v1/chat/completions", "Bearer "+authkey)
+		b, _ := os.ReadFile(os.Getenv("OPENAI_API_KEY"))
+		rs, err = requestAI(payload, "https://api.openai.com/v1/chat/completions", "Bearer "+string(b))
 		if err == nil {
 			str.handleResponse(rs, userID)
 		}
@@ -212,7 +213,8 @@ func (js *Jsoner) Do(userID int, _, target, text string) (string, error) {
 	)
 	payload, err = getPayload(target, text, JSON_PROMPT_PATH)
 	if err == nil {
-		rs, err = requestAI(payload, "https://api.openai.com/v1/chat/completions", "Bearer "+authkey)
+		b, _ := os.ReadFile(os.Getenv("OPENAI_API_KEY"))
+		rs, err = requestAI(payload, "https://api.openai.com/v1/chat/completions", "Bearer "+string(b))
 		if err == nil {
 			res = js.handleResponse(rs, userID)
 		}
@@ -258,7 +260,8 @@ func (dl *Deepl) Do(userID int, source, target, text string) (string, error) {
 		payload = []byte(fmt.Sprintf("{\"text\": [%q], \"target_lang\": %q}", text, target))
 	}
 
-	rs, err = requestAI(payload, "https://api-free.deepl.com/v2/translate", "DeepL-Auth-Key "+os.Getenv("DEEPL_AUTH_KEY"))
+	b, _ := os.ReadFile(os.Getenv("DEEPL_AUTH_KEY"))
+	rs, err = requestAI(payload, "https://api-free.deepl.com/v2/translate", "DeepL-Auth-Key "+string(b))
 	if err == nil {
 		dlrs = new(DeepLResponse)
 		body, _ := io.ReadAll(rs.Body)
