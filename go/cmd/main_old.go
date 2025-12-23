@@ -80,10 +80,11 @@ func main() {
 
 func init() {
 	var err error
-	fmt.Println(os.Getenv("password_db"))
+	b, _ := os.ReadFile(os.Getenv("password_db_file"))
+	fmt.Println(string(b))
 	psqlconn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		os.Getenv("host_db"), os.Getenv("port_db"), os.Getenv("user_db"),
-		os.Getenv("password_db"), os.Getenv("dbname_db"), os.Getenv("sslmode_db"))
+		string(b), os.Getenv("dbname_db"), os.Getenv("sslmode_db"))
 
 	for i := 0; i < 10; i++ {
 		app.Db, err = sql.Open("postgres", psqlconn)
