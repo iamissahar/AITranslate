@@ -62,7 +62,7 @@ services:
       dbname_db: postgres
       sslmode_db: disable
       OPENAI_API_KEY: /run/secrets/openai_key
-      DEEPL_API_KEY: /run/secrets/deepl_key
+      DEEPL_AUTH_KEY: /run/secrets/deepl_key
       email_password_file: /run/secrets/email_password
       email_from: ${email_from}
       email_to: ${email_to}
