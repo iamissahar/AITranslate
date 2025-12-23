@@ -54,7 +54,7 @@ services:
       host_db: postgres
       port_db: 5432
       user_db: postgres
-      password_db_file: /run/secrets/postgres_password
+      password_db: /run/secrets/postgres_password
       dbname_db: postgres
       sslmode_db: disable
       OPENAI_API_KEY: /run/secrets/openai_key
