@@ -423,6 +423,7 @@ async function DeepLTranslate(msg, responsef) {
         body: JSON.stringify(msg),
       },
     );
+    console.log(await response.text());
     console.log(response);
     const data = await response.json();
     if (data && data.ok) {

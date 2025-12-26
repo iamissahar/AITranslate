@@ -51,7 +51,10 @@ services:
       restart_policy:
         condition: on-failure
     ports:
-      - "4222:4222"
+      - target: 4222
+        published: 4222
+        protocol: tcp
+        mode: host
     environment:
       host_db: postgres
       port_db: 5432
