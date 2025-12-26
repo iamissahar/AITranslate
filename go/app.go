@@ -265,7 +265,6 @@ func (dl *Deepl) Do(userID int, source, target, text string) (string, error) {
 	if err == nil {
 		dlrs = new(DeepLResponse)
 		body, _ := io.ReadAll(rs.Body)
-		fmt.Println(string(body))
 		json.Unmarshal(body, dlrs)
 		// err = json.NewDecoder(rs.Body).Decode(dlrs)
 		if err == nil {
